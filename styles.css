@@ -1,0 +1,800 @@
+/* KNOBE Studio dashboard — two designed themes drawn from knobe.org's own
+   palette (paper, ink, moss, amber, brick).
+
+   Light: "archival paper" — warm paper surfaces, deep green ink, moss seals.
+   Dark:  "night grove"   — pine-black surfaces, paper-tinted ink, lit moss.
+
+   Token resolution order (later rules win):
+     1. .knobe-studio            → light tokens (default)
+     2. .theme-dark .knobe-studio → dark tokens (follows Obsidian)
+     3. .ks-theme-light / .ks-theme-dark → forced by the plugin setting
+
+   All text/background pairs hold WCAG 2.1 AA (≥4.5:1 text, ≥3:1 UI). */
+
+.knobe-studio {
+  /* --- light: archival paper --- */
+  --ks-bg: #f7f5ef;
+  --ks-bg-2: #efece2;
+  --ks-card: #fbfaf6;
+  --ks-field-bg: #ffffff;
+  --ks-field-border: #6e7f72;
+  --ks-line: #d8d3c4;
+  --ks-line-strong: #b5ae99;
+  --ks-ink: #1a2820;
+  --ks-muted: #4a5f53;
+  --ks-faint: #5d7265;
+  --ks-accent: #2f6b4f;
+  --ks-accent-strong: #1d4733;
+  --ks-on-accent: #f7f5ef;
+  --ks-ok: #22633f;
+  --ks-ok-bg: #e3eee5;
+  --ks-warn: #8a5314;
+  --ks-warn-bg: #f4e8d3;
+  --ks-bad: #9e2b1e;
+  --ks-bad-bg: #f6e6e3;
+  --ks-neutral-bg: #e9e6db;
+  --ks-info-bg: #e7ede8;
+  --ks-info-line: #a9c4b4;
+  --ks-focus: #1d4733;
+  --ks-shadow: 0 1px 3px rgba(26, 40, 32, 0.08);
+}
+
+.theme-dark .knobe-studio {
+  /* --- dark: night grove --- */
+  --ks-bg: #141f19;
+  --ks-bg-2: #1b2a22;
+  --ks-card: #182620;
+  --ks-field-bg: #101813;
+  --ks-field-border: #5a7663;
+  --ks-line: #2e4136;
+  --ks-line-strong: #46604f;
+  --ks-ink: #e6ede7;
+  --ks-muted: #a7b8ac;
+  --ks-faint: #8a9c8f;
+  --ks-accent: #6fbf95;
+  --ks-accent-strong: #8fd4ae;
+  --ks-on-accent: #f2f7f3;
+  --ks-ok: #85cba4;
+  --ks-ok-bg: #1a3327;
+  --ks-warn: #e3a35b;
+  --ks-warn-bg: #2e2415;
+  --ks-bad: #ee8877;
+  --ks-bad-bg: #351d19;
+  --ks-neutral-bg: #22312a;
+  --ks-info-bg: #1c2f26;
+  --ks-info-line: #3c5a4a;
+  --ks-focus: #8fd4ae;
+  --ks-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Forced appearance (plugin setting) — must out-cascade both rules above. */
+.knobe-studio.ks-theme-light,
+.theme-dark .knobe-studio.ks-theme-light {
+  --ks-bg: #f7f5ef;
+  --ks-bg-2: #efece2;
+  --ks-card: #fbfaf6;
+  --ks-field-bg: #ffffff;
+  --ks-field-border: #6e7f72;
+  --ks-line: #d8d3c4;
+  --ks-line-strong: #b5ae99;
+  --ks-ink: #1a2820;
+  --ks-muted: #4a5f53;
+  --ks-faint: #5d7265;
+  --ks-accent: #2f6b4f;
+  --ks-accent-strong: #1d4733;
+  --ks-on-accent: #f7f5ef;
+  --ks-ok: #22633f;
+  --ks-ok-bg: #e3eee5;
+  --ks-warn: #8a5314;
+  --ks-warn-bg: #f4e8d3;
+  --ks-bad: #9e2b1e;
+  --ks-bad-bg: #f6e6e3;
+  --ks-neutral-bg: #e9e6db;
+  --ks-info-bg: #e7ede8;
+  --ks-info-line: #a9c4b4;
+  --ks-focus: #1d4733;
+  --ks-shadow: 0 1px 3px rgba(26, 40, 32, 0.08);
+}
+
+.knobe-studio.ks-theme-dark,
+.theme-light .knobe-studio.ks-theme-dark {
+  --ks-bg: #141f19;
+  --ks-bg-2: #1b2a22;
+  --ks-card: #182620;
+  --ks-field-bg: #101813;
+  --ks-field-border: #5a7663;
+  --ks-line: #2e4136;
+  --ks-line-strong: #46604f;
+  --ks-ink: #e6ede7;
+  --ks-muted: #a7b8ac;
+  --ks-faint: #8a9c8f;
+  --ks-accent: #6fbf95;
+  --ks-accent-strong: #8fd4ae;
+  --ks-on-accent: #f2f7f3;
+  --ks-ok: #85cba4;
+  --ks-ok-bg: #1a3327;
+  --ks-warn: #e3a35b;
+  --ks-warn-bg: #2e2415;
+  --ks-bad: #ee8877;
+  --ks-bad-bg: #351d19;
+  --ks-neutral-bg: #22312a;
+  --ks-info-bg: #1c2f26;
+  --ks-info-line: #3c5a4a;
+  --ks-focus: #8fd4ae;
+  --ks-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- shell ---- */
+
+.knobe-studio {
+  padding: var(--size-4-4);
+  overflow-y: auto;
+  background: var(--ks-bg);
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-header h2 {
+  margin: 0 0 var(--size-2-2);
+  color: var(--ks-ink);
+  letter-spacing: 0.01em;
+}
+
+/* A moss "seal line" under the header gives both themes their signature. */
+.knobe-studio .ks-header {
+  border-bottom: 3px double var(--ks-line-strong);
+  padding-bottom: var(--size-2-3);
+  margin-bottom: var(--size-2-3);
+}
+
+.knobe-studio .ks-help {
+  color: var(--ks-muted);
+  font-size: var(--font-ui-small);
+  margin: var(--size-2-2) 0;
+}
+
+.knobe-studio .ks-hidden {
+  display: none !important;
+}
+
+/* Visually hidden but announced by screen readers (status region, caption). */
+.ks-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- tablist ---- */
+
+.knobe-studio .ks-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-1);
+  border-bottom: 1px solid var(--ks-line);
+  margin: var(--size-4-2) 0 var(--size-4-4);
+}
+
+.knobe-studio .ks-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--radius-s) var(--radius-s) 0 0;
+  padding: var(--size-2-2) var(--size-4-2);
+  color: var(--ks-muted);
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  box-shadow: none;
+}
+
+.knobe-studio .ks-tab:hover {
+  color: var(--ks-ink);
+  background: var(--ks-bg-2);
+}
+
+.knobe-studio .ks-tab:focus-visible {
+  outline: 2px solid var(--ks-focus);
+  outline-offset: 1px;
+}
+
+.knobe-studio .ks-tab.is-active {
+  color: var(--ks-ink);
+  border-bottom-color: var(--ks-accent);
+  background: var(--ks-bg-2);
+}
+
+.knobe-studio .ks-panel {
+  max-width: 860px;
+}
+
+.knobe-studio .ks-panel:focus-visible {
+  outline: 1px solid var(--ks-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+/* ---- fields ---- */
+
+.knobe-studio .ks-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  margin: var(--size-2-3) 0;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.knobe-studio .ks-field label {
+  font-size: var(--font-ui-smaller);
+  color: var(--ks-muted);
+  font-weight: var(--font-medium);
+}
+
+.knobe-studio .ks-field input[type="text"],
+.knobe-studio .ks-field textarea,
+.knobe-studio .ks-field select,
+.knobe-studio .ks-pastewrap textarea {
+  width: 100%;
+  font-family: inherit;
+  background: var(--ks-field-bg);
+  color: var(--ks-ink);
+  border: 1px solid var(--ks-field-border);
+  border-radius: var(--radius-s);
+}
+
+.knobe-studio .ks-field input[type="text"]:focus-visible,
+.knobe-studio .ks-field textarea:focus-visible,
+.knobe-studio .ks-field select:focus-visible,
+.knobe-studio .ks-pastewrap textarea:focus-visible {
+  outline: 2px solid var(--ks-focus);
+  outline-offset: 0;
+  border-color: var(--ks-accent);
+}
+
+.knobe-studio .ks-field input[type="text"]::placeholder,
+.knobe-studio .ks-field textarea::placeholder {
+  color: var(--ks-faint);
+}
+
+.knobe-studio .ks-field textarea {
+  resize: vertical;
+  font-size: var(--font-ui-small);
+}
+
+.knobe-studio .ks-row2 {
+  display: flex;
+  gap: var(--size-4-2);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.knobe-studio .ks-checkline {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  margin: var(--size-2-3) 0;
+  font-size: var(--font-ui-small);
+  color: var(--ks-ink);
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.knobe-studio .ks-checkline input[type="checkbox"],
+.knobe-studio .ks-jbuilds input[type="checkbox"] {
+  accent-color: var(--ks-accent);
+}
+
+.knobe-studio .ks-subhead {
+  margin: var(--size-4-4) 0 var(--size-2-2);
+  font-size: var(--font-ui-medium);
+  color: var(--ks-ink);
+  border-bottom: 1px solid var(--ks-line);
+  padding-bottom: var(--size-2-1);
+}
+
+.knobe-studio .ks-rowbtns {
+  display: flex;
+  gap: var(--size-2-2);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin: var(--size-2-3) 0;
+}
+
+.knobe-studio .ks-sealrow {
+  margin-top: var(--size-4-3);
+}
+
+/* ---- buttons ---- */
+
+.knobe-studio button:not(.ks-linkbtn):not(.ks-tab) {
+  background: var(--ks-bg-2);
+  color: var(--ks-ink);
+  border: 1px solid var(--ks-line-strong);
+  border-radius: var(--radius-s);
+  box-shadow: var(--ks-shadow);
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.knobe-studio button:not(.ks-linkbtn):not(.ks-tab):hover {
+  background: var(--ks-card);
+  border-color: var(--ks-accent);
+}
+
+.knobe-studio button.mod-cta {
+  background: var(--ks-accent-strong);
+  color: var(--ks-on-accent);
+  border-color: var(--ks-accent-strong);
+  font-weight: var(--font-semibold);
+}
+
+.theme-dark .knobe-studio button.mod-cta,
+.knobe-studio.ks-theme-dark button.mod-cta {
+  background: #2f6b4f;
+  color: #f2f7f3;
+  border-color: #46604f;
+}
+
+.knobe-studio button.mod-cta:hover {
+  background: var(--ks-accent);
+  color: var(--ks-on-accent);
+}
+
+.theme-dark .knobe-studio button.mod-cta:hover,
+.knobe-studio.ks-theme-dark button.mod-cta:hover {
+  background: #3a7d5d;
+  color: #ffffff;
+}
+
+.knobe-studio button:focus-visible {
+  outline: 2px solid var(--ks-focus);
+  outline-offset: 1px;
+}
+
+.knobe-studio button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.knobe-studio .ks-linkbtn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--ks-accent-strong);
+  cursor: pointer;
+  padding: var(--size-2-2) var(--size-2-3);
+  min-height: 24px; /* WCAG 2.2 SC 2.5.8 target size */
+  font-size: var(--font-ui-small);
+  text-decoration: underline;
+}
+
+.knobe-studio .ks-linkbtn:hover {
+  color: var(--ks-ink);
+  background: var(--ks-bg-2);
+}
+
+/* ---- intake ---- */
+
+.knobe-studio .ks-intake {
+  border: 1px dashed var(--ks-line-strong);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-2);
+  margin: var(--size-4-2) 0;
+  background: var(--ks-bg-2);
+}
+
+.knobe-studio .ks-intake-label {
+  font-weight: var(--font-medium);
+  margin-bottom: var(--size-2-2);
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-pastewrap textarea {
+  font-family: var(--font-monospace);
+  font-size: var(--font-smaller);
+}
+
+/* ---- messages ---- */
+
+.knobe-studio .ks-error {
+  color: var(--ks-bad);
+  background: var(--ks-bad-bg);
+  border: 1px solid var(--ks-bad);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-2) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+  font-size: var(--font-ui-small);
+}
+
+.knobe-studio .ks-banner {
+  background: var(--ks-info-bg);
+  border: 1px solid var(--ks-info-line);
+  border-left: 4px solid var(--ks-accent);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-2) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+  font-size: var(--font-ui-small);
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-warnbox {
+  background: var(--ks-warn-bg);
+  border: 1px solid var(--ks-warn);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-2) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+  font-size: var(--font-ui-small);
+  color: var(--ks-warn);
+}
+
+/* ---- verdicts & reports ---- */
+
+.knobe-studio .ks-result {
+  border: 1px solid var(--ks-line);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-2);
+  margin: var(--size-4-3) 0;
+  background: var(--ks-card);
+  box-shadow: var(--ks-shadow);
+}
+
+.knobe-studio .ks-verdict {
+  display: flex;
+  gap: var(--size-4-2);
+  align-items: center;
+  margin-bottom: var(--size-2-3);
+}
+
+.knobe-studio .ks-vsym {
+  font-size: 1.6em;
+  width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+}
+
+.knobe-studio .v-ok .ks-vsym { background: var(--ks-ok-bg); color: var(--ks-ok); border-color: var(--ks-ok); }
+.knobe-studio .v-warn .ks-vsym { background: var(--ks-warn-bg); color: var(--ks-warn); border-color: var(--ks-warn); }
+.knobe-studio .v-bad .ks-vsym { background: var(--ks-bad-bg); color: var(--ks-bad); border-color: var(--ks-bad); }
+.knobe-studio .v-neutral .ks-vsym { background: var(--ks-neutral-bg); color: var(--ks-muted); border-color: var(--ks-line-strong); }
+
+.knobe-studio .ks-vlabel { font-weight: var(--font-semibold); color: var(--ks-ink); }
+.knobe-studio .ks-vfile { color: var(--ks-muted); font-size: var(--font-ui-smaller); }
+
+.knobe-studio .ks-tagsrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-1);
+  margin: var(--size-2-2) 0;
+}
+
+.knobe-studio .ks-tag {
+  font-size: var(--font-ui-smaller);
+  border-radius: var(--radius-s);
+  padding: 1px var(--size-2-2);
+  border: 1px solid transparent;
+}
+
+.knobe-studio .ks-ok { background: var(--ks-ok-bg); color: var(--ks-ok); border-color: var(--ks-ok); }
+.knobe-studio .ks-warn { background: var(--ks-warn-bg); color: var(--ks-warn); border-color: var(--ks-warn); }
+.knobe-studio .ks-bad { background: var(--ks-bad-bg); color: var(--ks-bad); border-color: var(--ks-bad); }
+.knobe-studio .ks-neutral { background: var(--ks-neutral-bg); color: var(--ks-muted); border-color: var(--ks-line-strong); }
+
+.knobe-studio .ks-rgrid { margin: var(--size-2-3) 0; }
+.knobe-studio .ks-rrow { display: flex; gap: var(--size-4-2); padding: var(--size-2-1) 0; border-bottom: 1px solid var(--ks-line); }
+.knobe-studio .ks-rrow dt { flex: 0 0 130px; color: var(--ks-muted); font-size: var(--font-ui-smaller); }
+.knobe-studio .ks-rrow dd { margin: 0; word-break: break-all; font-size: var(--font-ui-small); color: var(--ks-ink); }
+
+.knobe-studio .ks-mono { font-family: var(--font-monospace); font-size: var(--font-smaller); word-break: break-all; color: var(--ks-ink); }
+.knobe-studio .ks-issues { color: var(--ks-warn); font-size: var(--font-ui-small); }
+.knobe-studio .ks-notes { color: var(--ks-faint); font-size: var(--font-ui-smaller); margin-top: var(--size-2-3); }
+
+.knobe-studio .ks-restext { font-weight: var(--font-semibold); margin-bottom: var(--size-2-1); color: var(--ks-ink); }
+.knobe-studio .ks-reshash { margin-bottom: var(--size-2-2); color: var(--ks-muted); }
+.knobe-studio .ks-chainline { font-size: var(--font-ui-small); margin: var(--size-2-2) 0; color: var(--ks-ink); }
+.knobe-studio .ks-chainline code { background: var(--ks-bg-2); color: var(--ks-ink); }
+.knobe-studio .ks-cok { color: var(--ks-ok); }
+.knobe-studio .ks-cwarn { color: var(--ks-warn); }
+.knobe-studio .ks-cbad { color: var(--ks-bad); }
+.knobe-studio .ks-cneutral { color: var(--ks-faint); }
+
+/* ---- preview: styled as an archival document ---- */
+
+.knobe-studio .ks-preview {
+  background: var(--ks-card);
+  border: 1px solid var(--ks-line);
+  border-top: 3px double var(--ks-line-strong);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-2);
+  font-size: var(--font-smaller);
+  color: var(--ks-ink);
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  box-shadow: var(--ks-shadow);
+}
+
+/* ---- origin cards (Transform / Adapt) ---- */
+
+.knobe-studio .ks-origcard {
+  border-left: 4px solid var(--ks-accent);
+  background: var(--ks-bg-2);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-3) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+}
+
+.knobe-studio .ks-origtitle { font-weight: var(--font-semibold); color: var(--ks-ink); }
+
+/* ---- journey steps ---- */
+
+.knobe-studio .ks-jstep {
+  border: 1px solid var(--ks-line);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-2);
+  margin: var(--size-2-3) 0;
+  background: var(--ks-card);
+  box-shadow: var(--ks-shadow);
+}
+
+.knobe-studio .ks-jstephead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.knobe-studio .ks-jstepnum { font-weight: var(--font-semibold); color: var(--ks-accent-strong); }
+.knobe-studio .ks-jstepbtns { display: flex; gap: var(--size-2-3); }
+
+.knobe-studio .ks-jbuilds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  align-items: center;
+  font-size: var(--font-ui-small);
+  margin: var(--size-2-2) 0;
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-jbuilds label {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  min-height: 24px; /* WCAG 2.2 SC 2.5.8 target size */
+  cursor: pointer;
+}
+
+.knobe-studio .ks-sealedhash { color: var(--ks-ok); margin: var(--size-2-1) 0; }
+
+/* ---- sources ---- */
+
+.knobe-studio .ks-srcrow {
+  border: 1px dashed var(--ks-line);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-2) var(--size-4-2);
+  margin: var(--size-2-2) 0;
+  background: var(--ks-bg-2);
+}
+
+.knobe-studio .ks-srclabel {
+  font-size: var(--font-ui-smaller);
+  color: var(--ks-muted);
+  font-weight: var(--font-medium);
+}
+
+/* ---- cohort table ---- */
+
+.knobe-studio .ks-cohort-summary {
+  font-weight: var(--font-medium);
+  margin: var(--size-2-3) 0;
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-tablewrap {
+  overflow: auto;
+  max-height: 420px; /* bounded scroll region so the sticky header works */
+  border: 1px solid var(--ks-line);
+  border-radius: var(--radius-m);
+  background: var(--ks-card);
+}
+
+.knobe-studio .ks-tablewrap:focus-visible {
+  outline: 2px solid var(--ks-focus);
+  outline-offset: 1px;
+}
+
+.knobe-studio .ks-cohort-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--font-ui-small);
+}
+
+.knobe-studio .ks-cohort-table th,
+.knobe-studio .ks-cohort-table td {
+  text-align: left;
+  padding: var(--size-2-1) var(--size-2-3);
+  border-bottom: 1px solid var(--ks-line);
+  vertical-align: top;
+  color: var(--ks-ink);
+}
+
+.knobe-studio .ks-cohort-table th {
+  background: var(--ks-bg-2);
+  color: var(--ks-muted);
+  font-weight: var(--font-medium);
+  position: sticky;
+  top: 0;
+}
+
+.knobe-studio .ks-chainbox { margin: var(--size-2-3) 0; }
+.knobe-studio .ks-chainitem {
+  padding: var(--size-2-2) 0;
+  border-bottom: 1px solid var(--ks-line);
+  font-size: var(--font-ui-small);
+  color: var(--ks-ink);
+}
+.knobe-studio .ks-chainlink { color: var(--ks-muted); padding-left: var(--size-4-3); }
+
+/* ---- AI disclosure wrap ---- */
+
+.knobe-studio .ks-aiwrap {
+  border: 1px solid var(--ks-warn);
+  background: var(--ks-warn-bg);
+  border-radius: var(--radius-m);
+  padding: var(--size-2-3) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+}
+
+.knobe-studio .ks-aiwrap .ks-help { color: var(--ks-ink); }
+
+/* ---- markdown toolbar ---- */
+
+.knobe-studio .ks-mdbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-1);
+  margin: var(--size-2-1) 0;
+}
+
+.knobe-studio .ks-mdbtn {
+  background: var(--ks-bg-2);
+  color: var(--ks-ink);
+  border: 1px solid var(--ks-line-strong);
+  border-radius: var(--radius-s);
+  padding: 2px var(--size-2-2);
+  min-height: 24px;
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.knobe-studio .ks-mdbtn:hover {
+  background: var(--ks-card);
+  border-color: var(--ks-accent);
+}
+
+.knobe-studio .ks-mdbtn:focus-visible {
+  outline: 2px solid var(--ks-focus);
+  outline-offset: 1px;
+}
+
+.knobe-studio .ks-mdhint {
+  margin-top: 0;
+}
+
+/* ---- demo / presentation mode ---- */
+
+.knobe-studio .ks-demo-banner {
+  background: var(--ks-warn-bg);
+  border: 1px solid var(--ks-warn);
+  border-left: 4px solid var(--ks-warn);
+  border-radius: var(--radius-s);
+  padding: var(--size-2-2) var(--size-4-2);
+  margin: var(--size-2-3) 0;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-medium);
+  color: var(--ks-warn);
+}
+
+.knobe-classroom .ks-demo-card {
+  border: 1px solid var(--ks-line);
+  border-left: 4px solid var(--ks-accent);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-2) var(--size-4-3);
+  margin: var(--size-2-3) 0;
+  background: var(--ks-card);
+  box-shadow: var(--ks-shadow);
+}
+
+.knobe-classroom .ks-demo-card .ks-subhead {
+  margin-top: 0;
+  border-bottom: none;
+}
+
+.knobe-classroom .ks-compliance {
+  border: 1px solid var(--ks-info-line);
+  border-radius: var(--radius-m);
+  padding: var(--size-2-3) var(--size-4-3);
+  margin: var(--size-2-3) 0;
+  background: var(--ks-info-bg);
+  font-size: var(--font-ui-small);
+  color: var(--ks-ink);
+}
+
+.knobe-classroom .ks-compliance ul {
+  margin: 0;
+  padding-left: var(--size-4-3);
+  line-height: 1.5;
+}
+
+.knobe-classroom .ks-compliance li {
+  margin-bottom: var(--size-2-2);
+}
+
+/* ---- Classroom: role guide cards ---- */
+
+.knobe-classroom .ks-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--size-4-2);
+  margin: var(--size-4-2) 0;
+}
+
+.knobe-classroom .ks-role-card {
+  border: 1px solid var(--ks-line);
+  border-top: 3px solid var(--ks-accent);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-3);
+  background: var(--ks-card);
+  box-shadow: var(--ks-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.knobe-classroom .ks-role-title {
+  margin: 0 0 var(--size-2-1);
+  color: var(--ks-accent-strong);
+  font-size: var(--font-ui-medium);
+}
+
+.knobe-classroom .ks-role-who {
+  margin: 0 0 var(--size-2-3);
+  color: var(--ks-muted);
+  font-size: var(--font-ui-small);
+  font-style: italic;
+}
+
+.knobe-classroom .ks-role-steps {
+  margin: 0 0 var(--size-2-3);
+  padding-left: var(--size-4-3);
+  color: var(--ks-ink);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  flex: 1 1 auto;
+}
+
+.knobe-classroom .ks-role-steps li {
+  margin-bottom: var(--size-2-1);
+}
+
+.knobe-classroom .ks-role-card .ks-rowbtns {
+  margin-top: auto;
+}
+
+/* ---- reduced motion: this UI animates nothing, but guard future additions ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .knobe-studio * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

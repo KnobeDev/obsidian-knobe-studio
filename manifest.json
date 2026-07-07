@@ -1,0 +1,10 @@
+{
+  "id": "knobe-studio",
+  "name": "KNOBE Studio",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "The KNOBE Studio workbench inside your vault: create, verify, transform, and adapt sealed KNOBE Protocol v1 knowledge objects, design assignment journeys, and batch-check cohort submissions.",
+  "author": "KNOBE Protocol",
+  "authorUrl": "https://knobe.org",
+  "isDesktopOnly": false
+}

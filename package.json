@@ -1,0 +1,30 @@
+{
+  "name": "knobe-studio",
+  "version": "0.1.0",
+  "description": "KNOBE Studio workbench for Obsidian: create, verify, transform, journey, cohort check, and adapt sealed knowledge objects.",
+  "main": "main.js",
+  "author": "Joshua Hori (https://github.com/jdhori)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdhori/obsidian-knobe-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jdhori/obsidian-knobe-studio/issues"
+  },
+  "homepage": "https://github.com/jdhori/obsidian-knobe-studio#readme",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.12",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.6"
+  }
+}
