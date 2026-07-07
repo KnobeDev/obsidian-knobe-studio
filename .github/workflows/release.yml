@@ -1,0 +1,55 @@
+name: Release plugins
+
+# Cut a release by pushing a version tag matching both manifests, e.g.:
+#   git tag 0.1.0 && git push origin 0.1.0
+# The job builds both plugins and attaches the files Obsidian / BRAT need.
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - name: Verify tag matches both manifest versions
+        run: |
+          for m in manifest.json instructor-plugin/manifest.json; do
+            V="$(node -p "require('./$m').version")"
+            if [ "$GITHUB_REF_NAME" != "$V" ]; then
+              echo "::error::tag '$GITHUB_REF_NAME' != version '$V' in $m"
+              exit 1
+            fi
+          done
+
+      - name: Package both plugins
+        run: |
+          mkdir -p dist/knobe-studio dist/knobe-instructor-studio
+          cp manifest.json main.js styles.css dist/knobe-studio/
+          cp instructor-plugin/manifest.json instructor-plugin/main.js instructor-plugin/styles.css dist/knobe-instructor-studio/
+          (cd dist && zip -r knobe-studio.zip knobe-studio && zip -r knobe-instructor-studio.zip knobe-instructor-studio)
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            main.js manifest.json styles.css \
+            dist/knobe-studio.zip dist/knobe-instructor-studio.zip \
+            --title "$TAG" \
+            --generate-notes
