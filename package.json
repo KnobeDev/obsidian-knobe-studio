@@ -7,12 +7,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jdhori/obsidian-knobe-studio.git"
+    "url": "https://github.com/KnobeDev/obsidian-knobe-studio.git"
   },
   "bugs": {
-    "url": "https://github.com/jdhori/obsidian-knobe-studio/issues"
+    "url": "https://github.com/KnobeDev/obsidian-knobe-studio/issues"
   },
-  "homepage": "https://github.com/jdhori/obsidian-knobe-studio#readme",
+  "homepage": "https://github.com/KnobeDev/obsidian-knobe-studio#readme",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
