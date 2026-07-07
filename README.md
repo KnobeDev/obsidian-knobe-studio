@@ -95,7 +95,7 @@ Every install below drops files into `<your vault>/.obsidian/plugins/<plugin-id>
 
 ### Option A — Manual install (step by step, no build tools)
 
-1. Open the repo's **[Releases](https://github.com/jdhori/obsidian-knobe-studio/releases)** page and expand the latest release's **Assets**.
+1. Open the repo's **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page and expand the latest release's **Assets**.
 2. Download **`knobe-studio.zip`**. (Also download **`knobe-instructor-studio.zip`** if you want the educator dashboard.)
 3. Find your vault's plugins folder (see above): `<vault>/.obsidian/plugins/`.
 4. Unzip each file *into* that folder. You should end up with a folder per plugin, each containing `manifest.json`, `main.js`, and `styles.css`:
@@ -110,12 +110,12 @@ Every install below drops files into `<your vault>/.obsidian/plugins/<plugin-id>
 
 ### Option B — BRAT (auto-updating beta installs)
 
-If you use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin: **BRAT → Add Beta plugin**, paste `https://github.com/jdhori/obsidian-knobe-studio`, and it installs **KNOBE Studio** and keeps it updated. (BRAT tracks one plugin per repo, so install the Instructor Studio via Option A or C.)
+If you use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin: **BRAT → Add Beta plugin**, paste `https://github.com/KnobeDev/obsidian-knobe-studio`, and it installs **KNOBE Studio** and keeps it updated. (BRAT tracks one plugin per repo, so install the Instructor Studio via Option A or C.)
 
 ### Option C — Build from source
 
 ```bash
-git clone https://github.com/jdhori/obsidian-knobe-studio.git
+git clone https://github.com/KnobeDev/obsidian-knobe-studio.git
 cd obsidian-knobe-studio
 npm install && npm run build
 ```
@@ -133,7 +133,7 @@ Then enable both in Community plugins.
 
 If you use an agentic AI desktop — **Claude Desktop / Claude Code, Antigravity, Codex**, or similar — you can hand it the whole job. Open the agent *with access to your machine* and paste a prompt like:
 
-> Clone `https://github.com/jdhori/obsidian-knobe-studio`, run `npm install && npm run build`, then install both plugins into my Obsidian vault at `<PATH-TO-YOUR-VAULT>`. Create `<vault>/.obsidian/plugins/knobe-studio/` and `<vault>/.obsidian/plugins/knobe-instructor-studio/`, copy each plugin's `manifest.json`, `main.js`, and `styles.css` into the matching folder (the Instructor Studio's files are in the repo's `instructor-plugin/` subfolder), then add both ids to `<vault>/.obsidian/community-plugins.json` so they're enabled. Tell me to reload Obsidian when done.
+> Clone `https://github.com/KnobeDev/obsidian-knobe-studio`, run `npm install && npm run build`, then install both plugins into my Obsidian vault at `<PATH-TO-YOUR-VAULT>`. Create `<vault>/.obsidian/plugins/knobe-studio/` and `<vault>/.obsidian/plugins/knobe-instructor-studio/`, copy each plugin's `manifest.json`, `main.js`, and `styles.css` into the matching folder (the Instructor Studio's files are in the repo's `instructor-plugin/` subfolder), then add both ids to `<vault>/.obsidian/community-plugins.json` so they're enabled. Tell me to reload Obsidian when done.
 
 Replace `<PATH-TO-YOUR-VAULT>` with your actual vault path (e.g. `~/Documents/MyVault`). The agent handles cloning, building, copying, and enabling; you just reload Obsidian and click the ribbon icons.
 
