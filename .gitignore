@@ -7,3 +7,4 @@ instructor-plugin/styles.css
 *.log
 data.json
 .DS_Store
+dist/
