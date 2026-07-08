@@ -19,7 +19,7 @@ export interface StudioSettings {
   demoFolder: string;
   /** When true, pickers, saves, and active-note reads are limited to demoFolder. */
   demoMode: boolean;
-  /** Companion (Instructor Studio) version this plugin last wrote into the vault; "" = never. */
+  /** Companion (Teaching Studio) version this plugin last wrote into the vault; "" = never. */
   companionInstalledVersion: string;
 }
 
@@ -122,7 +122,7 @@ export class StudioSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Demo / presentation mode")
-      .setDesc("Safe to screen-share to students: confines all file access to the demo folder. Also toggleable from the Instructor Studio dashboard.")
+      .setDesc("Safe to screen-share to students: confines all file access to the demo folder. Also toggleable from the Teaching Studio dashboard.")
       .addToggle((t) =>
         t.setValue(this.plugin.settings.demoMode).onChange(async (v) => {
           await this.plugin.setDemoMode(v);
@@ -132,11 +132,11 @@ export class StudioSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Companion plugin").setHeading();
 
     new Setting(containerEl)
-      .setName("KNOBE Instructor Studio")
+      .setName("KNOBE Teaching Studio")
       .setDesc(
-        "The educator dashboard ships inside KNOBE Studio (v" +
+        "The teaching dashboard ships inside KNOBE Studio (v" +
           companionManifest().version +
-          ") and is installed automatically as its own plugin, toggled on or off in Community plugins like any other. If you've removed it, this puts it back."
+          ") and installs itself as its own plugin, enabled by default — toggle it off in Community plugins like any other. If you've removed it, this puts it back."
       )
       .addButton((b) =>
         b.setButtonText("Reinstall").onClick(async () => {

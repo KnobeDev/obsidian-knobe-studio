@@ -1,7 +1,7 @@
 /**
  * api.ts — the cross-plugin contract between the KNOBE Studio plugin and the
- * separate KNOBE Instructor Studio plugin. Studio owns the tools, the vault
- * scoping, and the demo state; the Instructor plugin consumes this surface so
+ * separate KNOBE Teaching Studio plugin. Studio owns the tools, the vault
+ * scoping, and the demo state; the Teaching Studio plugin consumes this surface so
  * it never imports Studio's internals. Both plugins bundle this file.
  */
 import type { App } from "obsidian";

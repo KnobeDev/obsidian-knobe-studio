@@ -1,7 +1,7 @@
 /**
  * main.ts — the KNOBE Studio plugin entry: registers the Studio dashboard
  * view, commands, ribbon icon, file-menu items, and the settings tab, and
- * exposes `knobeApi` for the separate KNOBE Instructor Studio plugin.
+ * exposes `knobeApi` for the separate KNOBE Teaching Studio plugin.
  */
 import { Menu, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { KNOBE_STUDIO_VIEW, KnobeStudioView } from "./view";
@@ -13,14 +13,14 @@ import type { KnobeStudioApi } from "./api";
 
 export default class KnobeStudioPlugin extends Plugin {
   settings: StudioSettings = { ...DEFAULT_SETTINGS };
-  /** Public surface consumed by the KNOBE Instructor Studio plugin. */
+  /** Public surface consumed by the KNOBE Teaching Studio plugin. */
   knobeApi!: KnobeStudioApi;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.knobeApi = this.buildApi();
 
-    // After startup settles, unpack the bundled Instructor Studio plugin so
+    // After startup settles, unpack the bundled Teaching Studio plugin so
     // it appears in Settings → Community plugins without a second download.
     this.app.workspace.onLayoutReady(() => void ensureCompanionInstalled(this));
 
@@ -157,7 +157,7 @@ export default class KnobeStudioPlugin extends Plugin {
     view.selectTab(tab);
   }
 
-  /** The cross-plugin API surface consumed by the Instructor Studio plugin. */
+  /** The cross-plugin API surface consumed by the Teaching Studio plugin. */
   private buildApi(): KnobeStudioApi {
     return {
       openStudioAt: (tab: TabId) => this.openStudioAt(tab),

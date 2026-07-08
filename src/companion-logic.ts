@@ -1,5 +1,5 @@
 /**
- * companion-logic.ts — decides whether the embedded KNOBE Instructor Studio
+ * companion-logic.ts — decides whether the embedded KNOBE Teaching Studio
  * plugin should be written into the vault. Pure functions, no Obsidian and no
  * generated-payload imports, so tests can exercise every branch directly.
  */

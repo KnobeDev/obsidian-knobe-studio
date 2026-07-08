@@ -1,5 +1,5 @@
 /**
- * classroom.ts — the KNOBE Instructor Studio dashboard (an ItemView). It
+ * classroom.ts — the KNOBE Teaching Studio dashboard (an ItemView). It
  * gathers the semester workflow (who does what, when) into one place and
  * routes one click into the actual tools, which live in the separate KNOBE
  * Studio plugin. It holds no tools of its own — a single Studio instance stays
@@ -8,8 +8,8 @@
  * journey and demo submissions directly.
  *
  * The internal view-type id ("knobe-classroom-view") and class name are kept
- * stable across the "Classroom" → "Instructor Studio" rename so open tabs and
- * saved workspace state are not orphaned.
+ * stable across the "Classroom" → "Instructor Studio" → "Teaching Studio"
+ * renames so open tabs and saved workspace state are not orphaned.
  */
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import type { KnobeStudioApi } from "./api";
@@ -92,7 +92,7 @@ export class KnobeClassroomView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "KNOBE Instructor Studio";
+    return "KNOBE Teaching Studio";
   }
 
   getIcon(): string {
@@ -130,10 +130,10 @@ export class KnobeClassroomView extends ItemView {
     this.applyAppearance();
 
     const header = c.createDiv({ cls: "ks-header" });
-    header.createEl("h2", { text: "KNOBE Instructor Studio" });
+    header.createEl("h2", { text: "KNOBE Teaching Studio" });
     header.createEl("p", {
       cls: "ks-help",
-      text: "The semester workflow in one place: who seals what, and when. Each path opens the matching tool in the Studio dashboard — the Instructor Studio guides; the Studio does the sealing.",
+      text: "Learn the KNOBE workflow in one place: who seals what, and when. Each path opens the matching tool in the Studio dashboard — the Teaching Studio guides; the Studio does the sealing.",
     });
 
     // Re-theme / re-sync when this view becomes active again (e.g. after the
@@ -171,7 +171,7 @@ export class KnobeClassroomView extends ItemView {
   private renderMissingStudio(c: HTMLElement): void {
     const box = c.createDiv({ cls: "ks-banner" });
     box.createEl("p", {
-      text: "KNOBE Instructor Studio needs the KNOBE Studio plugin, which provides the tools this dashboard opens.",
+      text: "KNOBE Teaching Studio needs the KNOBE Studio plugin, which provides the tools this dashboard opens.",
     });
     box.createEl("p", {
       text: "Enable KNOBE Studio in Settings → Community plugins, then reopen this dashboard.",

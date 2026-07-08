@@ -1,7 +1,7 @@
 /**
- * instructor-main.ts — the KNOBE Instructor Studio plugin entry. This is a
- * SEPARATE, independently-installable Obsidian plugin (id knobe-instructor-
- * studio) that provides the educator dashboard. It holds no tools of its own:
+ * instructor-main.ts — the KNOBE Teaching Studio plugin entry. This is a
+ * SEPARATE, independently-installable Obsidian plugin (id knobe-teaching-
+ * studio) that provides the teaching dashboard. It holds no tools of its own:
  * it resolves the KNOBE Studio plugin's `knobeApi` at runtime and routes into
  * it. If Studio is not enabled, the dashboard shows a "requires KNOBE Studio"
  * message rather than failing.
@@ -17,11 +17,11 @@ export default class KnobeInstructorPlugin extends Plugin {
       (leaf: WorkspaceLeaf) => new KnobeClassroomView(leaf, () => getKnobeStudioApi(this.app))
     );
 
-    this.addRibbonIcon("graduation-cap", "Open KNOBE Instructor Studio", () => void this.activateView());
+    this.addRibbonIcon("graduation-cap", "Open KNOBE Teaching Studio", () => void this.activateView());
 
     this.addCommand({
-      id: "open-instructor-studio",
-      name: "Open Instructor Studio dashboard",
+      id: "open-teaching-studio",
+      name: "Open Teaching Studio dashboard",
       callback: () => void this.activateView(),
     });
   }
