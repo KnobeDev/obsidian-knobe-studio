@@ -56,7 +56,7 @@ The educator dashboard ships as its **own installable plugin**, `knobe-instructo
 
 **It requires the KNOBE Studio plugin.** The Instructor Studio holds no tools of its own — it reaches Studio through a small public API (`knobeApi`) for deep-links, shared demo state, and the save folder, so there is exactly one source of truth and no duplicated tools. If KNOBE Studio isn't enabled, the dashboard shows a "requires KNOBE Studio" message instead of failing.
 
-Install it the same way as the main plugin: copy `instructor-plugin/manifest.json`, `instructor-plugin/main.js`, and `instructor-plugin/styles.css` into `<vault>/.obsidian/plugins/knobe-instructor-studio/`, then enable **KNOBE Instructor Studio** (with **KNOBE Studio** also enabled).
+There's nothing extra to install: KNOBE Studio bundles it and unpacks it into `<vault>/.obsidian/plugins/knobe-instructor-studio/` on first load. Just enable **KNOBE Instructor Studio** in Community plugins (with **KNOBE Studio** also enabled).
 
 It also carries a **teaching kit**: one click seals a ready-to-use four-step example journey (prompt → reading → draft → revision, with per-step AI policies) into your output folder, so you can start from a working sequence instead of a blank Journey maker.
 
@@ -87,7 +87,7 @@ This repo ships **two plugins**:
 | **KNOBE Studio** | `knobe-studio` | the six-tab workbench | nothing |
 | **KNOBE Instructor Studio** | `knobe-instructor-studio` | the educator dashboard | **KNOBE Studio** |
 
-Install **KNOBE Studio** on its own if you just want the workbench. Add **KNOBE Instructor Studio** as well if you're teaching — it requires KNOBE Studio to be installed and enabled.
+**You only ever install KNOBE Studio.** It carries the Instructor Studio inside its bundle and unpacks it into your plugins folder automatically (never auto-enabled), so both plugins appear in **Settings → Community plugins** with the usual toggles. Turn on **KNOBE Studio** alone for the workbench; also turn on **KNOBE Instructor Studio** if you're teaching. Removing the Instructor Studio sticks — Studio won't re-add it (a **Reinstall** button in Studio's settings brings it back).
 
 ### Where is my vault's plugins folder?
 
@@ -96,21 +96,20 @@ Every install below drops files into `<your vault>/.obsidian/plugins/<plugin-id>
 ### Option A — Manual install (step by step, no build tools)
 
 1. Open the repo's **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page and expand the latest release's **Assets**.
-2. Download **`knobe-studio.zip`**. (Also download **`knobe-instructor-studio.zip`** if you want the educator dashboard.)
+2. Download **`knobe-studio.zip`** — it's the only file you need; the Instructor Studio is bundled inside. (`knobe-instructor-studio.zip` is still published for anyone who wants to place it by hand.)
 3. Find your vault's plugins folder (see above): `<vault>/.obsidian/plugins/`.
-4. Unzip each file *into* that folder. You should end up with a folder per plugin, each containing `manifest.json`, `main.js`, and `styles.css`:
+4. Unzip it *into* that folder, so you end up with:
    ```
    <vault>/.obsidian/plugins/
-     ├─ knobe-studio/            (manifest.json, main.js, styles.css)
-     └─ knobe-instructor-studio/ (manifest.json, main.js, styles.css)
+     └─ knobe-studio/            (manifest.json, main.js, styles.css)
    ```
 5. In Obsidian: **Settings → Community plugins**. If "Restricted mode" is on, turn it **off**.
-6. Click the **reload/refresh** icon next to "Installed plugins" (or restart Obsidian), then toggle **KNOBE Studio** on — and **KNOBE Instructor Studio** too, if you installed it.
+6. Click the **reload/refresh** icon next to "Installed plugins" (or restart Obsidian), then toggle **KNOBE Studio** on. On first load it installs **KNOBE Instructor Studio** alongside itself — toggle that on too if you're teaching.
 7. You'll see the ribbon icons in the left gutter: a **stamp** (Studio) and a **graduation cap** (Instructor Studio). Click either to open its dashboard.
 
 ### Option B — BRAT (auto-updating beta installs)
 
-If you use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin: **BRAT → Add Beta plugin**, paste `https://github.com/KnobeDev/obsidian-knobe-studio`, and it installs **KNOBE Studio** and keeps it updated. (BRAT tracks one plugin per repo, so install the Instructor Studio via Option A or C.)
+If you use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin: **BRAT → Add Beta plugin**, paste `https://github.com/KnobeDev/obsidian-knobe-studio`, and it installs **KNOBE Studio** and keeps it updated. BRAT tracks one plugin per repo, but that's enough: KNOBE Studio installs (and, on BRAT updates, upgrades) the bundled **KNOBE Instructor Studio** by itself — just enable it in Community plugins.
 
 ### Option C — Build from source
 

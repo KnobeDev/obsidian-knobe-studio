@@ -1,7 +1,7 @@
 {
   "id": "knobe-instructor-studio",
   "name": "KNOBE Instructor Studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.4.0",
   "description": "Educator dashboard for KNOBE Studio: the semester workflow guide, a teaching kit, and FERPA/HIPAA-safe demo mode. Requires the KNOBE Studio plugin.",
   "author": "KNOBE Protocol",

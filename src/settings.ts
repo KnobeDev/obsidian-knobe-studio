@@ -3,6 +3,7 @@
  * that prefill the Create and Adapt forms.
  */
 import { App, PluginSettingTab, Setting } from "obsidian";
+import { companionManifest, reinstallCompanion } from "./companion-install";
 import type KnobeStudioPlugin from "./main";
 
 
@@ -18,6 +19,8 @@ export interface StudioSettings {
   demoFolder: string;
   /** When true, pickers, saves, and active-note reads are limited to demoFolder. */
   demoMode: boolean;
+  /** Companion (Instructor Studio) version this plugin last wrote into the vault; "" = never. */
+  companionInstalledVersion: string;
 }
 
 export const DEFAULT_SETTINGS: StudioSettings = {
@@ -28,6 +31,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   appearance: "follow",
   demoFolder: "KNOBE/Demo",
   demoMode: false,
+  companionInstalledVersion: "",
 };
 
 export class StudioSettingTab extends PluginSettingTab {
@@ -122,6 +126,21 @@ export class StudioSettingTab extends PluginSettingTab {
       .addToggle((t) =>
         t.setValue(this.plugin.settings.demoMode).onChange(async (v) => {
           await this.plugin.setDemoMode(v);
+        })
+      );
+
+    new Setting(containerEl).setName("Companion plugin").setHeading();
+
+    new Setting(containerEl)
+      .setName("KNOBE Instructor Studio")
+      .setDesc(
+        "The educator dashboard ships inside KNOBE Studio (v" +
+          companionManifest().version +
+          ") and is installed automatically as its own plugin, toggled on or off in Community plugins like any other. If you've removed it, this puts it back."
+      )
+      .addButton((b) =>
+        b.setButtonText("Reinstall").onClick(async () => {
+          await reinstallCompanion(this.plugin);
         })
       );
   }
