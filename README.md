@@ -80,38 +80,51 @@ Verification and sealing run on `knobe-core.js`, the official KNOBE Protocol v1 
 
 ## Installing
 
-This repo ships **two plugins**:
+**You only ever install one thing: KNOBE Studio.** The Instructor Studio (educator dashboard) is bundled inside it and installs itself automatically as a second plugin — never auto-enabled, just sitting in **Settings → Community plugins** behind its own toggle:
 
-| Plugin | Folder id | What it is | Needs |
-|--------|-----------|------------|-------|
-| **KNOBE Studio** | `knobe-studio` | the six-tab workbench | nothing |
-| **KNOBE Instructor Studio** | `knobe-instructor-studio` | the educator dashboard | **KNOBE Studio** |
+| Toggle | What it turns on | Who needs it |
+|--------|------------------|--------------|
+| **KNOBE Studio** | the six-tab workbench | everyone |
+| **KNOBE Instructor Studio** | the educator dashboard | instructors (needs KNOBE Studio on) |
 
-**You only ever install KNOBE Studio.** It carries the Instructor Studio inside its bundle and unpacks it into your plugins folder automatically (never auto-enabled), so both plugins appear in **Settings → Community plugins** with the usual toggles. Turn on **KNOBE Studio** alone for the workbench; also turn on **KNOBE Instructor Studio** if you're teaching. Removing the Instructor Studio sticks — Studio won't re-add it (a **Reinstall** button in Studio's settings brings it back).
+If you remove the Instructor Studio, it stays removed — Studio won't re-add it. The **Reinstall** button in Studio's settings brings it back.
 
-### Where is my vault's plugins folder?
+Two easy ways in. Pick whichever fits how you work:
 
-Every install below drops files into `<your vault>/.obsidian/plugins/<plugin-id>/`. To find it: in Obsidian, **Settings → Community plugins → Installed plugins → the folder icon** opens `<vault>/.obsidian/plugins/` directly. (`.obsidian` is hidden; enable "show hidden files" in your file manager if you navigate there by hand.)
+### Easy way 1 — BRAT (in-app, auto-updating)
 
-### Option A — Manual install (step by step, no build tools)
+1. In Obsidian, install and enable **BRAT** from Community plugins (search "BRAT").
+2. Open BRAT's settings → **Add Beta plugin** → paste:
+   ```
+   https://github.com/KnobeDev/obsidian-knobe-studio
+   ```
+3. In **Settings → Community plugins**, toggle on **KNOBE Studio** — and **KNOBE Instructor Studio** if you're teaching.
 
-1. Open the repo's **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page and expand the latest release's **Assets**.
-2. Download **`knobe-studio.zip`** — it's the only file you need; the Instructor Studio is bundled inside. (`knobe-instructor-studio.zip` is still published for anyone who wants to place it by hand.)
-3. Find your vault's plugins folder (see above): `<vault>/.obsidian/plugins/`.
-4. Unzip it *into* that folder, so you end up with:
+BRAT keeps KNOBE Studio updated, and each update carries the matching Instructor Studio with it. Done.
+
+### Easy way 2 — Ask your AI desktop
+
+If you use an agentic AI assistant with access to your machine — **Claude Desktop, Claude Code, Antigravity, Codex**, or similar — paste this and swap in your vault path:
+
+> Download `knobe-studio.zip` from the latest release at https://github.com/KnobeDev/obsidian-knobe-studio/releases and unzip it into `<PATH-TO-YOUR-VAULT>/.obsidian/plugins/` (creating the folder `knobe-studio/` with `manifest.json`, `main.js`, `styles.css` inside). Then restart Obsidian and tell me how to enable it.
+
+That's the entire job — one zip, no build tools, no Node. When Obsidian reopens, toggle on **KNOBE Studio** in **Settings → Community plugins** (the AI can often do this too by adding `"knobe-studio"` to `.obsidian/community-plugins.json` while Obsidian is closed). On first load, Studio installs **KNOBE Instructor Studio** next to itself — toggle that on too if you're teaching.
+
+### Manual install (no tools at all)
+
+The same thing your AI would do, by hand:
+
+1. On the **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page, download **`knobe-studio.zip`** from the latest release's Assets. It's the only file you need. (`knobe-instructor-studio.zip` is still published for anyone placing that plugin by hand.)
+2. Find your vault's plugins folder: in Obsidian, **Settings → Community plugins → Installed plugins → the folder icon** opens `<vault>/.obsidian/plugins/`. (`.obsidian` is hidden; enable "show hidden files" if you navigate there yourself.)
+3. Unzip *into* that folder, so you end up with:
    ```
    <vault>/.obsidian/plugins/
      └─ knobe-studio/            (manifest.json, main.js, styles.css)
    ```
-5. In Obsidian: **Settings → Community plugins**. If "Restricted mode" is on, turn it **off**.
-6. Click the **reload/refresh** icon next to "Installed plugins" (or restart Obsidian), then toggle **KNOBE Studio** on. On first load it installs **KNOBE Instructor Studio** alongside itself — toggle that on too if you're teaching.
-7. You'll see the ribbon icons in the left gutter: a **stamp** (Studio) and a **graduation cap** (Instructor Studio). Click either to open its dashboard.
+4. Back in **Settings → Community plugins**: turn off "Restricted mode" if it's on, click the **reload/refresh** icon (or restart Obsidian), and toggle **KNOBE Studio** on. It installs **KNOBE Instructor Studio** alongside itself — toggle that on too if you're teaching.
+5. Look for the ribbon icons in the left gutter: a **stamp** (Studio) and a **graduation cap** (Instructor Studio).
 
-### Option B — BRAT (auto-updating beta installs)
-
-If you use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin: **BRAT → Add Beta plugin**, paste `https://github.com/KnobeDev/obsidian-knobe-studio`, and it installs **KNOBE Studio** and keeps it updated. BRAT tracks one plugin per repo, but that's enough: KNOBE Studio installs (and, on BRAT updates, upgrades) the bundled **KNOBE Instructor Studio** by itself — just enable it in Community plugins.
-
-### Option C — Build from source
+### Build from source (developers)
 
 ```bash
 git clone https://github.com/KnobeDev/obsidian-knobe-studio.git
@@ -119,7 +132,7 @@ cd obsidian-knobe-studio
 npm install && npm run build
 ```
 
-This produces `main.js` (Studio) and `instructor-plugin/main.js` (Instructor Studio). Copy each plugin's `manifest.json` + `main.js` + `styles.css` into its `<vault>/.obsidian/plugins/<id>/` folder, or symlink the folders for live development:
+This produces `main.js` (Studio, with the built Instructor Studio embedded) and `instructor-plugin/main.js` (Instructor Studio standalone). Copy `manifest.json` + `main.js` + `styles.css` into `<vault>/.obsidian/plugins/knobe-studio/` — the Instructor Studio installs itself from there — or symlink the folders for live development:
 
 ```bash
 ln -s "$(pwd)" "<vault>/.obsidian/plugins/knobe-studio"
@@ -127,19 +140,6 @@ ln -s "$(pwd)/instructor-plugin" "<vault>/.obsidian/plugins/knobe-instructor-stu
 ```
 
 Then enable both in Community plugins.
-
-### Option D — The easy way: let an AI desktop do it
-
-If you use an agentic AI desktop — **Claude Desktop / Claude Code, Antigravity, Codex**, or similar — you can hand it the whole job. Open the agent *with access to your machine* and paste a prompt like:
-
-> Clone `https://github.com/KnobeDev/obsidian-knobe-studio`, run `npm install && npm run build`, then install both plugins into my Obsidian vault at `<PATH-TO-YOUR-VAULT>`. Create `<vault>/.obsidian/plugins/knobe-studio/` and `<vault>/.obsidian/plugins/knobe-instructor-studio/`, copy each plugin's `manifest.json`, `main.js`, and `styles.css` into the matching folder (the Instructor Studio's files are in the repo's `instructor-plugin/` subfolder), then add both ids to `<vault>/.obsidian/community-plugins.json` so they're enabled. Tell me to reload Obsidian when done.
-
-Replace `<PATH-TO-YOUR-VAULT>` with your actual vault path (e.g. `~/Documents/MyVault`). The agent handles cloning, building, copying, and enabling; you just reload Obsidian and click the ribbon icons.
-
-**Tips for the AI-desktop route:**
-- The agent needs filesystem/terminal access to your machine (Claude Code, Claude Desktop with a filesystem MCP, Antigravity, and Codex all qualify).
-- If you don't want it to build, tell it to **download the release zips** from the Releases page and unzip them into the plugins folder instead — no Node required.
-- Ask it to **reload Obsidian's plugin list** for you if your agent can drive the UI; otherwise reload it yourself (`Ctrl/Cmd+R` → "Reload app without saving", or restart).
 
 ## Themes
 
