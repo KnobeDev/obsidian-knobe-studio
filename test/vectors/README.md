@@ -33,6 +33,10 @@ python3 lens.py minimal-valid.knobe.md
 
 The [`adversarial/`](adversarial/) subdirectory contains ten additional hostile-input files — duplicate keys, NFC key collisions, control-character injection, unsupported spec versions — with expected results in [`adversarial/README.md`](adversarial/README.md). They are not part of the canonical-compatibility bar; they test verifier robustness.
 
+## Interpretation set
+
+The [`interpretation/`](interpretation/) subdirectory contains six files pinning the documented rulings in [ERRATA.md](../ERRATA.md): questions the specification text left open, reported by an implementer building from the text alone, each resolved authoritatively and fixed by a vector both reference verifiers agree on. Expected results in [`interpretation/README.md`](interpretation/README.md).
+
 ## Notes
 
 - `payload_hash` is the SHA-256 of the canonical JSON payload (keys recursively sorted, no whitespace, NFC-normalized keys and string values, literal UTF-8, `payload_hash` field excluded).

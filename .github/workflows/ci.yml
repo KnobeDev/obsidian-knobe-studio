@@ -12,8 +12,18 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      KNOBE_PROTOCOL_DIR: ${{ github.workspace }}/.upstream/knobe-protocol
     steps:
       - uses: actions/checkout@v4
+
+      # The drift guard (test/upstream-sync.test.ts) locks the vendored engine
+      # and bundled vectors to the canonical protocol repository.
+      - name: Check out canonical KNOBE protocol
+        uses: actions/checkout@v4
+        with:
+          repository: KnobeOne/knobe-protocol
+          path: .upstream/knobe-protocol
 
       # Node 22: the ZIP reader uses DecompressionStream("deflate-raw"),
       # which needs Node >= 21.2 (tests inflate real deflate streams).

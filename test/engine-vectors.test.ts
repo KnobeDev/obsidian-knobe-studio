@@ -42,6 +42,67 @@ describe("engine reproduces the nine official test vector verdicts", () => {
   });
 });
 
+// Expected results transcribed from the upstream adversarial/ and
+// interpretation/ READMEs. Unreadable files must report body_verified as
+// omitted; machine output may spell that "omitted" or null (erratum E11).
+const OMITTED = ["omitted", null];
+
+describe("engine reproduces the adversarial vector verdicts", () => {
+  const CASES: Array<[string, string, string | null, string]> = [
+    ["bad-attribution-sources-type.knobe.md", "verified", "omitted", "invalid"],
+    ["bad-body-hash-format.knobe.md", "verified-body-modified", "modified", "invalid"],
+    ["bad-created-date.knobe.md", "verified", "omitted", "invalid"],
+    ["control-character-title.knobe.md", "verified", "omitted", "valid"],
+    ["duplicate-key.knobe.md", "unreadable", null, "invalid"],
+    ["multi-block-warning.knobe.md", "verified", "omitted", "warnings"],
+    ["nfc-key-collision.knobe.md", "unreadable", null, "invalid"],
+    ["no-frontmatter-valid-payload.knobe.md", "verified", "omitted", "invalid"],
+    ["payload-array.knobe.md", "unreadable", null, "invalid"],
+    ["unsupported-spec-version.knobe.md", "unreadable", null, "invalid"],
+  ];
+
+  test.each(CASES)("%s → %s / %s / %s", async (file, state, body, conformance) => {
+    const report = await verify(vector("adversarial/" + file));
+    expect(report.state).toBe(state);
+    expect(report.conformance).toBe(conformance);
+    if (body === null) expect(OMITTED).toContain(report.body_verified);
+    else expect(report.body_verified).toBe(body);
+  });
+});
+
+describe("engine follows the ERRATA rulings pinned by the interpretation vectors", () => {
+  const CASES: Array<[string, string, string | null, string]> = [
+    ["boolean-null-values.knobe.md", "verified", "omitted", "valid"],
+    ["spec-version-frontmatter-mismatch.knobe.md", "verified", "omitted", "warnings"],
+    ["begin-marker-mid-line.knobe.md", "verified", "yes", "valid"],
+    ["base64-unpadded.knobe.md", "unreadable", null, "invalid"],
+    ["attribution-missing.knobe.md", "verified", "omitted", "invalid"],
+    ["astral-unicode-literal.knobe.md", "verified", "omitted", "valid"],
+  ];
+
+  test.each(CASES)("%s → %s / %s / %s", async (file, state, body, conformance) => {
+    const report = await verify(vector("interpretation/" + file));
+    expect(report.state).toBe(state);
+    expect(report.conformance).toBe(conformance);
+    if (body === null) expect(OMITTED).toContain(report.body_verified);
+    else expect(report.body_verified).toBe(body);
+  });
+
+  test("E5: frontmatter/payload spec_version disagreement names both values", async () => {
+    const report = await verify(vector("interpretation/spec-version-frontmatter-mismatch.knobe.md"));
+    expect(report.conformance_issues).toContain(
+      "frontmatter spec_version '1.1' does not match sealed payload spec_version '1.0'"
+    );
+  });
+
+  test("E9: a wholly absent attribution reports exactly one issue", async () => {
+    const report = await verify(vector("interpretation/attribution-missing.knobe.md"));
+    expect(report.conformance_issues.filter((i) => i.includes("attribution"))).toEqual([
+      "required field missing: attribution",
+    ]);
+  });
+});
+
 describe("authoring round-trips", () => {
   test("createKnobe output verifies as intact", async () => {
     const r = await createKnobe({
