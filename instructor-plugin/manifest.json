@@ -1,7 +1,7 @@
 {
   "id": "knobe-teaching-studio",
   "name": "KNOBE Teaching Studio",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "minAppVersion": "1.4.0",
   "description": "Teaching dashboard for KNOBE Studio: learn the workbench and the semester workflow role by role, with a teaching kit and FERPA/HIPAA-safe demo mode. Requires the KNOBE Studio plugin.",
   "author": "KNOBE Protocol",
