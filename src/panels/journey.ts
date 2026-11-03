@@ -8,7 +8,7 @@ import { createKnobe, verify, type CreateResult } from "../engine/knobe-core";
 import {
   JKINDS, JPOLICIES, JSEALERS,
   buildJourneyBody, buildJourneyFields, journeyContextForInstructorStep,
-  journeyContextForStep, localToday, newJourneyStep, singleLine, slugify,
+  journeyContextForStep, journeyPayloadSteps, localToday, newJourneyStep, singleLine, slugify,
   type JourneyMeta, type JourneyStep, type LoadedJourney,
 } from "../studio-core";
 import {
@@ -16,7 +16,10 @@ import {
   row2, sectionHeading, selectField, showError, textAreaField, textField,
 } from "../ui";
 import { buildIntake } from "../intake";
+import { renderJourneyMap } from "../journey-map-view";
 import type { StudioContext } from "../panel-context";
+
+let stepIdSeq = 0;
 
 const optionPairs = (rec: Record<string, string | { label: string }>): Array<[string, string]> =>
   Object.entries(rec).map(([k, v]) => [k, typeof v === "string" ? v : v.label]);
@@ -32,6 +35,7 @@ export class JourneyPanel {
   private title!: HTMLInputElement;
   private instructor!: HTMLInputElement;
   private stepsEl!: HTMLElement;
+  private mapEl!: HTMLElement;
   private addStepBtn!: HTMLButtonElement;
   private revisionNote!: HTMLElement;
   private preview!: HTMLElement;
@@ -64,12 +68,14 @@ export class JourneyPanel {
 
     this.revisionNote = root.createDiv({ cls: "ks-banner ks-hidden", attr: { role: "status" } });
     this.stepsEl = root.createDiv();
+    this.mapEl = root.createDiv({ cls: "ks-hidden" });
 
     const btns = root.createDiv({ cls: "ks-rowbtns" });
     this.addStepBtn = button(btns, "Add step", () => {
       this.steps.push(newJourneyStep());
       this.renderSteps();
       this.schedulePreview();
+      announce("Step " + this.steps.length + " added.");
     });
     button(btns, "Load existing journey to revise…", () => {
       this.ctx.pickFile((r) => void this.loadForRevision(r.text).catch((e: unknown) => {
@@ -133,23 +139,29 @@ export class JourneyPanel {
 
   private schedulePreview = debounce(() => {
     this.preview.setText(this.buildBody());
+    renderJourneyMap(this.mapEl, journeyPayloadSteps(this.steps));
   }, 300);
 
   private renderSteps(): void {
     const box = this.stepsEl;
     box.empty();
     this.steps.forEach((s, i) => {
-      const card = box.createDiv({ cls: "ks-jstep" });
+      // Each step is a group named by its visible "Step N", so a screen
+      // reader says which step's fields it is in; the number tracks moves
+      // because this rebuilds.
+      const numId = "ks-jstep-" + ++stepIdSeq;
+      const card = box.createDiv({ cls: "ks-jstep", attr: { role: "group", "aria-labelledby": numId } });
       const head = card.createDiv({ cls: "ks-jstephead" });
-      head.createSpan({ cls: "ks-jstepnum", text: "Step " + (i + 1) });
+      head.createSpan({ cls: "ks-jstepnum", text: "Step " + (i + 1), attr: { id: numId } });
       const btns = head.createDiv({ cls: "ks-jstepbtns" });
-      if (i > 0) {
-        button(btns, "Up", () => { this.swap(i, i - 1); }, { link: true });
-      }
-      if (i < this.steps.length - 1) {
-        button(btns, "Down", () => { this.swap(i, i + 1); }, { link: true });
-      }
-      button(btns, "Remove", () => {
+      // Unique names ("Up step 2") keep these distinguishable in a controls
+      // list; the visible word leads the name (SC 2.5.3 Label in Name).
+      const stepButton = (verb: string, onClick: () => void): void => {
+        button(btns, verb, onClick, { link: true }).setAttribute("aria-label", verb + " step " + (i + 1));
+      };
+      if (i > 0) stepButton("Up", () => { this.swap(i, i - 1); });
+      if (i < this.steps.length - 1) stepButton("Down", () => { this.swap(i, i + 1); });
+      stepButton("Remove", () => {
         this.steps.splice(i, 1);
         this.steps.forEach((t) => {
           t.builds_on = t.builds_on.filter((n) => n !== i).map((n) => (n > i ? n - 1 : n));
@@ -159,7 +171,7 @@ export class JourneyPanel {
         // renderSteps rebuilt the DOM; park focus somewhere stable and say why.
         this.addStepBtn.focus();
         announce("Step " + (i + 1) + " removed.");
-      }, { link: true });
+      });
 
       const r1 = row2(card);
       textField(r1, "Step title", s.title, {
@@ -226,10 +238,13 @@ export class JourneyPanel {
     });
     this.renderSteps();
     this.schedulePreview();
-    // Keep keyboard focus with the moved step after the rebuild.
+    // Keep keyboard focus with the moved step after the rebuild, on the same
+    // direction's button when it still exists, so repeated moves need no re-tabbing.
+    const dir = b < a ? "Up" : "Down";
     const movedCard = this.stepsEl.children[b] as HTMLElement | undefined;
-    movedCard?.querySelector("button")?.focus();
-    announce("Step moved to position " + (b + 1) + ".");
+    const same = movedCard?.querySelector<HTMLButtonElement>('button[aria-label^="' + dir + ' "]');
+    (same ?? movedCard?.querySelector("button"))?.focus();
+    announce("Step moved " + dir.toLowerCase() + " to position " + (b + 1) + " of " + this.steps.length + ".");
   }
 
   private sealStepInCreate(i: number): void {
@@ -240,6 +255,7 @@ export class JourneyPanel {
     const kind = JKINDS[s.kind] ?? JKINDS.reading;
     this.ctx.openCreateWithJourney({
       journeyCtx: journeyContextForInstructorStep(this.steps, i, this.course.value, this.term.value),
+      journeyMap: { steps: journeyPayloadSteps(this.steps), currentIdx: i },
       banner: "Sealing journey step " + (i + 1) + ": " + (s.title || "Untitled step") + ". The sealed hash will flow back into the journey.",
       prefill: {
         title: s.title,
@@ -333,6 +349,7 @@ export class JourneyPanel {
 
     this.pickerBox.empty();
     this.pickerBox.removeClass("ks-hidden");
+    renderJourneyMap(this.pickerBox.createDiv(), j.steps);
     this.pickerBox.createDiv({ cls: "ks-intake-label", text: "Pick your step:" });
     const btns = this.pickerBox.createDiv({ cls: "ks-rowbtns" });
     const studentSteps = j.steps.map((s, i) => ({ s, i })).filter((x) => x.s.sealer === "student");
@@ -356,6 +373,7 @@ export class JourneyPanel {
     if (policy.ui === "disclose") preservations.push("do not remove the AI contribution disclosure");
     this.ctx.openCreateWithJourney({
       journeyCtx,
+      journeyMap: { steps: journey.steps, currentIdx: idx },
       banner:
         "Journey: " + journeyTitle.slice(0, 90) + " · Step " + (idx + 1) + " of " + journey.steps.length +
         ": " + String(step.title ?? "Untitled step").slice(0, 90) + " · " + policy.label + ".",

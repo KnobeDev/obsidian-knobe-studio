@@ -257,7 +257,7 @@ describe("Cohort", () => {
   });
 
   test("chainVerdict and anomalyScore rank unlinked/broken rows first", () => {
-    const expectation = { title: "Journey", hashes: new Set(["e".repeat(64)]) };
+    const expectation = { title: "Journey", hashes: new Set(["e".repeat(64)]), stored: "e".repeat(64) };
     const linked: CohortRow = {
       file: "a", title: "", author: "", state: "verified", conformance: "valid",
       ai: "none declared", chainHashes: ["e".repeat(64)], review: "", stored: "x", parents: [],

@@ -6,9 +6,8 @@
  */
 import { ItemView, MarkdownView, TFile, TFolder, WorkspaceLeaf } from "obsidian";
 import type KnobeStudioPlugin from "./main";
-import type { IntakeResult, StudioContext, TabId } from "./panel-context";
-import type { CreateResult } from "./engine/knobe-core";
-import { courseFolder, type CreateFormState, type JourneyContext } from "./studio-core";
+import type { IntakeResult, JourneyPrime, StudioContext, TabId } from "./panel-context";
+import { courseFolder } from "./studio-core";
 import { isUnderFolder, saveSealedFile } from "./vault";
 import { FolderSuggestModal, KnobeFileSuggestModal } from "./modals";
 import { CreatePanel } from "./panels/create";
@@ -17,6 +16,7 @@ import { TransformPanel } from "./panels/transform";
 import { JourneyPanel } from "./panels/journey";
 import { CohortPanel } from "./panels/cohort";
 import { AdaptPanel } from "./panels/adapt";
+import { announce } from "./ui";
 
 export const KNOBE_STUDIO_VIEW = "knobe-studio-view";
 
@@ -33,6 +33,7 @@ export class KnobeStudioView extends ItemView {
   plugin: KnobeStudioPlugin;
   private tabs = new Map<TabId, HTMLElement>();
   private panels = new Map<TabId, HTMLElement>();
+  private currentTab: TabId | null = null;
   private createPanel!: CreatePanel;
   private verifyPanel!: VerifyPanel;
 
@@ -152,7 +153,7 @@ export class KnobeStudioView extends ItemView {
     }
   }
 
-  selectTab(id: TabId, opts?: { silent?: boolean }): void {
+  selectTab(id: TabId, opts?: { silent?: boolean; announce?: boolean }): void {
     for (const def of TAB_DEFS) {
       const on = def.id === id;
       const tab = this.tabs.get(def.id)!;
@@ -161,7 +162,13 @@ export class KnobeStudioView extends ItemView {
       tab.toggleClass("is-active", on);
       this.panels.get(def.id)!.hidden = !on;
     }
-    if (!opts?.silent) this.tabs.get(id)!.focus();
+    const changed = this.currentTab !== null && this.currentTab !== id;
+    this.currentTab = id;
+    if (opts?.silent) return;
+    this.tabs.get(id)!.focus();
+    // The tabs pattern leaves focus on the tab, so say that the panel
+    // content changed too.
+    if (changed && opts?.announce !== false) announce(TAB_DEFS.find((d) => d.id === id)!.label + " workspace shown.");
   }
 
   /** Programmatic entries used by plugin commands. */
@@ -217,14 +224,11 @@ export class KnobeStudioView extends ItemView {
       selectTab(id: TabId): void {
         view.selectTab(id);
       },
-      openCreateWithJourney(args: {
-        journeyCtx: JourneyContext;
-        banner: string;
-        prefill?: Partial<CreateFormState>;
-        onSealed?: (r: CreateResult) => void;
-      }): void {
+      openCreateWithJourney(args: JourneyPrime): void {
         view.createPanel.primeWithJourney(args);
-        view.selectTab("create");
+        // The primed banner (a status region) already says where the user
+        // landed; a second tab announcement would talk over it.
+        view.selectTab("create", { announce: false });
       },
     };
   }

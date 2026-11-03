@@ -20,7 +20,8 @@ import {
   row2, sectionHeading, selectField, showError, textAreaField, textField,
 } from "../ui";
 import { buildMarkdownToolbar } from "../md-toolbar";
-import type { StudioContext } from "../panel-context";
+import { renderJourneyMap } from "../journey-map-view";
+import type { JourneyPrime, StudioContext } from "../panel-context";
 
 const CONTENT_TYPES: Array<[string, string]> = [
   ["original", "original"], ["compression", "compression"], ["synthesis", "synthesis"],
@@ -48,6 +49,8 @@ export class CreatePanel {
   private resultDest: { term?: string; course?: string } | null = null;
 
   private banner!: HTMLElement;
+  private mapEl!: HTMLElement;
+  private journeyMap: JourneyPrime["journeyMap"] | null = null;
   private aiWrap!: HTMLElement;
   private aiName!: HTMLInputElement;
   private aiWhat!: HTMLTextAreaElement;
@@ -84,6 +87,7 @@ export class CreatePanel {
     helpText(root, "Seal content into a .knobe.md knowledge object: the markdown body stays readable, and a sealed payload records attribution, fidelity limits, and use conditions with a SHA-256 integrity hash.");
 
     this.banner = root.createDiv({ cls: "ks-banner ks-hidden", attr: { role: "status" } });
+    this.mapEl = root.createDiv({ cls: "ks-hidden" });
 
     const starters = root.createDiv({ cls: "ks-rowbtns" });
     button(starters, "Start from active note", async () => {
@@ -107,6 +111,7 @@ export class CreatePanel {
       if (!this.state.license) this.state.license = this.ctx.settings.defaultLicense;
       this.journeyCtx = null;
       this.banner.addClass("ks-hidden");
+      this.setJourneyMap(null);
       this.aiWrap.addClass("ks-hidden");
       this.rebuildForm();
     });
@@ -115,6 +120,7 @@ export class CreatePanel {
       this.journeyCtx = null;
       this.onSealed = null;
       this.banner.addClass("ks-hidden");
+      this.setJourneyMap(null);
       this.aiWrap.addClass("ks-hidden");
       this.rebuildForm();
     });
@@ -287,6 +293,17 @@ export class CreatePanel {
       this.fileName.value = slugify(this.result.payload.title);
       this.resBox.removeClass("ks-hidden");
       this.resBox.focus();
+      // An instructor sealing a step anchors it: badge it on this panel's
+      // copy of the map now. The Journey panel records the hash in its own
+      // canonical steps via onSealed; the two copies are independent by design.
+      if (this.journeyMap && ctx && !ctx.forStudent) {
+        const { steps, currentIdx } = this.journeyMap;
+        const payloadHash = this.result.payloadHash;
+        this.setJourneyMap({
+          steps: steps.map((st, i) => (i === currentIdx ? { ...st, spec_hash: payloadHash } : st)),
+          currentIdx,
+        });
+      }
       if (this.onSealed) {
         const cb = this.onSealed;
         this.onSealed = null;
@@ -297,13 +314,13 @@ export class CreatePanel {
     }
   }
 
+  private setJourneyMap(map: JourneyPrime["journeyMap"] | null): void {
+    this.journeyMap = map ?? null;
+    renderJourneyMap(this.mapEl, map ? map.steps : null, map ? map.currentIdx : null);
+  }
+
   /** Journey flows (instructor step sealing, student submissions) land here. */
-  primeWithJourney(args: {
-    journeyCtx: JourneyContext;
-    banner: string;
-    prefill?: Partial<CreateFormState>;
-    onSealed?: (r: CreateResult) => void;
-  }): void {
+  primeWithJourney(args: JourneyPrime): void {
     if (this.onSealed) {
       announce("The previous journey step was replaced before it was sealed; its hash will not be recorded.");
     }
@@ -313,6 +330,7 @@ export class CreatePanel {
     this.onSealed = args.onSealed ?? null;
     this.banner.setText(args.banner);
     this.banner.removeClass("ks-hidden");
+    this.setJourneyMap(args.journeyMap ?? null);
     this.aiName.value = "";
     this.aiWhat.value = "";
     const ui = args.journeyCtx.aiUI;

@@ -1,16 +1,20 @@
 /**
  * panels/cohort.ts — the Cohort check panel: batch-verify a vault folder of
  * submissions, check chain links against an expectation (journey or spec)
- * file, view the lineage between submissions, and export CSV.
+ * file, view the lineage between submissions, export CSV, and seal a cohort
+ * receipt attesting the verdicts.
  */
 import { TFolder } from "obsidian";
-import { verify } from "../engine/knobe-core";
+import { createKnobe, verify, type CreateResult } from "../engine/knobe-core";
 import {
   chainVerdict, cohortCsv, cohortRowFromReport, expectationFromReport,
-  localToday, sortCohortRows, unreadableCohortRow,
+  localToday, singleLine, slugify, sortCohortRows, unreadableCohortRow,
   type CohortExpectation, type CohortRow,
 } from "../studio-core";
-import { button, errorBox, helpText, hideError, sectionHeading, showError } from "../ui";
+import { buildCohortReceipt } from "../cohort-receipt";
+import {
+  button, copyToClipboard, errorBox, helpText, hideError, sectionHeading, showError, textField,
+} from "../ui";
 import { buildIntake } from "../intake";
 import { pickZipFile, skippedSummary } from "../zip-intake";
 import { pickDirectory, pickTextFiles } from "../loose-intake";
@@ -29,6 +33,14 @@ export class CohortPanel {
   private summary!: HTMLElement;
   private tbody!: HTMLTableSectionElement;
   private chainBox!: HTMLElement;
+  private receipt: CreateResult | null = null;
+  private rcptName!: HTMLInputElement;
+  private rcptErr!: HTMLElement;
+  private rcptRes!: HTMLElement;
+  private rcptText!: HTMLElement;
+  private rcptHash!: HTMLElement;
+  private rcptChain!: HTMLElement;
+  private rcptFileName!: HTMLInputElement;
 
   constructor(ctx: StudioContext, root: HTMLElement) {
     this.ctx = ctx;
@@ -47,6 +59,7 @@ export class CohortPanel {
           " (" + this.expectation.hashes.size + " accepted hash" + (this.expectation.hashes.size === 1 ? "" : "es") + ")."
         );
         this.expBanner.removeClass("ks-hidden");
+        this.hideReceipt();
         if (this.rows.length) this.renderRows();
       },
     });
@@ -87,6 +100,7 @@ export class CohortPanel {
     });
     button(btns, "Clear", () => {
       this.rows = [];
+      this.hideReceipt();
       this.resultsBox.addClass("ks-hidden");
       this.chainBox.addClass("ks-hidden");
     }, { link: true });
@@ -120,6 +134,69 @@ export class CohortPanel {
 
     sectionHeading(this.resultsBox, "Chains");
     this.chainBox = this.resultsBox.createDiv({ cls: "ks-chainbox ks-hidden" });
+
+    this.buildReceipt(this.resultsBox);
+  }
+
+  /** "Seal a cohort receipt": a sealed attestation of the table's verdicts. */
+  private buildReceipt(parent: HTMLElement): void {
+    const box = parent.createEl("details", { cls: "ks-receipt" });
+    box.createEl("summary", { text: "Seal a cohort receipt" });
+    helpText(box, "The receipt seals what this table shows: at seal time, these files existed with these payload hashes and produced these verdicts. Verdicts and hashes only; student-declared names are not sealed in. Anchored anywhere with an independent timestamp, its one hash timestamps every listed submission.");
+    this.rcptName = textField(box, "Who is attesting", this.ctx.settings.defaultAuthor);
+    // The attester's own name: identify the input purpose (SC 1.3.5).
+    this.rcptName.setAttribute("autocomplete", "name");
+    const hint = this.rcptName.parentElement!.createDiv({
+      cls: "ks-help", text: "Recorded as the receipt's attribution, role cohort_verifier.", attr: { id: this.rcptName.id + "-hint" },
+    });
+    this.rcptName.setAttribute("aria-describedby", hint.id);
+    button(box.createDiv({ cls: "ks-rowbtns" }), "Seal the receipt", () => this.sealReceipt(), { cta: true });
+    this.rcptErr = errorBox(box);
+
+    this.rcptRes = box.createDiv({ cls: "ks-result ks-hidden", attr: { tabindex: "-1" } });
+    this.rcptText = this.rcptRes.createDiv({ cls: "ks-restext" });
+    this.rcptHash = this.rcptRes.createDiv({ cls: "ks-mono ks-reshash" });
+    this.rcptChain = this.rcptRes.createDiv({ cls: "ks-help" });
+    const nameRow = this.rcptRes.createDiv({ cls: "ks-rowbtns" });
+    this.rcptFileName = textField(nameRow, "File name", "cohort-receipt.knobe.md");
+    button(nameRow, "Save to vault", async () => {
+      if (!this.receipt) return;
+      const file = await this.ctx.saveSealed(this.rcptFileName.value.trim() || "cohort-receipt.knobe.md", this.receipt.text);
+      if (this.ctx.settings.openAfterSeal) this.ctx.openFile(file);
+    }, { cta: true });
+    button(nameRow, "Copy file text", async () => {
+      if (this.receipt) await copyToClipboard(this.receipt.text);
+    });
+    helpText(this.rcptRes, "To anchor the date externally, put the payload_hash above somewhere you do not control the timestamp of: an email, a gradebook note, a post. One hash anchors every listed submission.");
+  }
+
+  private async sealReceipt(): Promise<void> {
+    hideError(this.rcptErr);
+    try {
+      if (!this.rows.length) throw new Error("There is nothing to attest; run a check first.");
+      const name = singleLine(this.rcptName.value);
+      if (!name) throw new Error("Name who is attesting; the credit is part of the record.");
+      this.receipt = await createKnobe(buildCohortReceipt(this.rows, this.expectation, name, localToday()));
+      this.rcptText.setText("Sealed. Self-check: " + this.receipt.report.state + " · " + this.receipt.report.conformance + ".");
+      this.rcptHash.setText("payload_hash " + this.receipt.payloadHash);
+      this.rcptChain.setText(
+        this.expectation && this.expectation.stored
+          ? 'Anchored to "' + this.expectation.title.slice(0, 90) + '" as parents[0], payload_hash ' + this.expectation.stored + "."
+          : "No expectation loaded; the receipt records verdicts without a chain target."
+      );
+      this.rcptFileName.value = slugify(this.receipt.payload.title);
+      this.rcptRes.removeClass("ks-hidden");
+      this.rcptRes.focus();
+    } catch (e) {
+      showError(this.rcptErr, "Sealing did not complete: " + (e instanceof Error ? e.message : String(e)));
+    }
+  }
+
+  /** A sealed receipt describes one table; any change to the table retires it. */
+  private hideReceipt(): void {
+    this.receipt = null;
+    this.rcptRes.addClass("ks-hidden");
+    hideError(this.rcptErr);
   }
 
   /** Load a batch of text entries (from ZIP, disk files, or a disk folder). */
@@ -159,7 +236,11 @@ export class CohortPanel {
     this.renderRows();
   }
 
+  // Invariant: every change to this.rows or this.expectation must end in
+  // renderRows() (or hideReceipt()), so a sealed receipt never outlives the
+  // table it describes.
   private renderRows(): void {
+    this.hideReceipt();
     this.rows = sortCohortRows(this.rows, this.expectation);
     this.tbody.empty();
     let okCount = 0, badCount = 0, aiCount = 0;

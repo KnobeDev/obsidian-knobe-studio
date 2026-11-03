@@ -558,6 +558,8 @@ export interface CohortRow {
 export interface CohortExpectation {
   title: string;
   hashes: Set<string>;
+  /** The expectation file's own payload hash: a receipt's responds_to parent. */
+  stored: string | null;
 }
 
 const truncate = (v: string, n: number): string => (v.length > n ? v.slice(0, n - 1) + "…" : v);
@@ -654,6 +656,7 @@ export function expectationFromReport(report: VerifyReport): CohortExpectation {
   return {
     title: typeof report.payload?.title === "string" ? report.payload.title : "Untitled",
     hashes,
+    stored: report.stored,
   };
 }
 

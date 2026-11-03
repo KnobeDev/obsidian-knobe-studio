@@ -4,11 +4,21 @@
  * or into the plugin directly.
  */
 import type { App, TFile, TFolder } from "obsidian";
-import type { CreateResult } from "./engine/knobe-core";
+import type { CreateResult, JourneyPayloadStep } from "./engine/knobe-core";
 import type { CreateFormState, JourneyContext } from "./studio-core";
 import type { StudioSettings } from "./settings";
 
 export type TabId = "create" | "verify" | "transform" | "journey" | "cohort" | "adapt";
+
+/** Journey → Create hand-off: what the Create panel is primed with. */
+export interface JourneyPrime {
+  journeyCtx: JourneyContext;
+  banner: string;
+  prefill?: Partial<CreateFormState>;
+  onSealed?: (r: CreateResult) => void;
+  /** The whole journey, drawn as a map with the step being worked on marked. */
+  journeyMap?: { steps: JourneyPayloadStep[]; currentIdx: number };
+}
 
 export interface IntakeResult {
   text: string;
@@ -46,10 +56,5 @@ export interface StudioContext {
    * context and optional field prefills. onSealed fires when Create seals,
    * so a step's hash can flow back to the Journey panel.
    */
-  openCreateWithJourney(args: {
-    journeyCtx: JourneyContext;
-    banner: string;
-    prefill?: Partial<CreateFormState>;
-    onSealed?: (r: CreateResult) => void;
-  }): void;
+  openCreateWithJourney(args: JourneyPrime): void;
 }
