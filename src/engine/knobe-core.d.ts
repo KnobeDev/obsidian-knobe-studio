@@ -137,7 +137,8 @@ export const REQUIRED: string[];
 export const STRING_FIELDS: string[];
 export const CANONICAL_VOCAB: Record<string, Set<string>>;
 
-export function safe(value: unknown, limit?: number): string;
+/** limit counts code points; null keeps the whole text. */
+export function safe(value: unknown, limit?: number | null): string;
 export function parseJSONStrict(text: string): unknown;
 export function canonicalize(x: unknown): string;
 export function sha256Hex(str: string): Promise<string>;
