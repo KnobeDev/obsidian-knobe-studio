@@ -3,6 +3,7 @@
  * derive a new object that declares its parent by hash, and seal it.
  */
 import { permits, read, transformKnobe, verify, type CreateResult, type VerifyReport } from "../engine/knobe-core";
+import { REPORT_TEXT_LIMIT, shown, storedHashText } from "../display";
 import { BEGIN_MARKER, localToday, singleLine, slugify } from "../studio-core";
 import {
   button, conformanceTagCls, copyToClipboard, errorBox, helpText, hideError,
@@ -105,8 +106,8 @@ export class TransformPanel {
     }
     const rd = await read(text);
     this.original = { text, report };
-    this.origTitle.setText(typeof report.payload?.title === "string" ? report.payload.title.slice(0, 160) : "Untitled");
-    this.origHash.setText("payload_hash " + report.stored);
+    this.origTitle.setText(typeof report.payload?.title === "string" ? shown(report.payload.title, 160) : "Untitled");
+    this.origHash.setText("payload_hash " + (storedHashText(report.stored) ?? "(none)"));
     this.origTags.empty();
     tagChip(this.origTags, "integrity: " + report.state, stateTagCls(report.state));
     tagChip(this.origTags, "conformance: " + report.conformance, conformanceTagCls(report.conformance));
@@ -116,7 +117,10 @@ export class TransformPanel {
     const p = permits(report, "transform");
     const verdictWord = p.allowed === true ? "allowed" : p.allowed === "conditional" ? "conditional" : "not permitted";
     let permitsLine = 'The sealed terms evaluate "transform" as ' + verdictWord + ".";
-    if (p.obligations.length) permitsLine += " Obligations: " + p.obligations.join("; ") + ".";
+    // Obligations quote the sealed license, privacy_level and extension keys.
+    if (p.obligations.length) {
+      permitsLine += " Obligations: " + p.obligations.map((o) => shown(o, REPORT_TEXT_LIMIT)).join("; ") + ".";
+    }
     if (p.allowed === false) {
       permitsLine += " Studio will still seal a derivative; authorization is a matter of the sealed terms, not the tool.";
     }

@@ -6,6 +6,7 @@
  * through the hardened readZipTextEntries parser before anything renders.
  */
 import { readZipTextEntries, type ZipReadResult } from "./zip";
+import { shown } from "./display";
 
 export function pickZipFile(onResult: (result: ZipReadResult, zipName: string) => void, onError: (message: string) => void): void {
   const input = document.createElement("input");
@@ -26,7 +27,8 @@ export function pickZipFile(onResult: (result: ZipReadResult, zipName: string) =
 /** One-line summary of what a zip read skipped, or "" when nothing was. */
 export function skippedSummary(result: ZipReadResult): string {
   if (!result.skipped.length) return "";
-  const shown = result.skipped.slice(0, 3).map((s) => s.path + " (" + s.reason + ")").join("; ");
+  // Entry paths come from the archive: escaped like any other file-derived text.
+  const listed = result.skipped.slice(0, 3).map((s) => shown(s.path) + " (" + s.reason + ")").join("; ");
   const more = result.skipped.length > 3 ? "; and " + (result.skipped.length - 3) + " more" : "";
-  return "Skipped " + result.skipped.length + ": " + shown + more + ".";
+  return "Skipped " + result.skipped.length + ": " + listed + more + ".";
 }

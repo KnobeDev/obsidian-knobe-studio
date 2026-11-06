@@ -8,6 +8,8 @@ import { buildIntake } from "../intake";
 import { button, errorBox, helpText, hideError, renderReport, showError } from "../ui";
 import { pickZipFile, skippedSummary } from "../zip-intake";
 import { pickTextFiles } from "../loose-intake";
+import { shown } from "../display";
+import type { ZipTextEntry } from "../zip";
 import type { StudioContext } from "../panel-context";
 
 export class VerifyPanel {
@@ -60,29 +62,37 @@ export class VerifyPanel {
   private presentEntries(result: import("../zip").ZipReadResult, sourceName: string): void {
     this.zipBox.empty();
     if (!result.entries.length) {
-      showError(this.zipErr, "No verifiable text files were found in " + sourceName + ". " + skippedSummary(result));
+      showError(this.zipErr, "No verifiable text files were found in " + shown(sourceName) + ". " + skippedSummary(result));
       this.zipBox.addClass("ks-hidden");
       return;
     }
     if (result.entries.length === 1) {
       const only = result.entries[0]!;
-      void verify(only.text).then((report) => renderReport(this.result, report, sourceName + " › " + only.path));
+      void this.verifyEntry(only, sourceName);
       this.zipBox.addClass("ks-hidden");
       const note = skippedSummary(result);
       if (note) showError(this.zipErr, note);
       return;
     }
     this.zipBox.removeClass("ks-hidden");
-    this.zipBox.createDiv({ cls: "ks-intake-label", text: sourceName + " — pick a file to verify:" });
+    // Entry paths and file names come from the archive or disk: escape them.
+    this.zipBox.createDiv({ cls: "ks-intake-label", text: shown(sourceName) + " — pick a file to verify:" });
     const btns = this.zipBox.createDiv({ cls: "ks-rowbtns" });
     for (const entry of result.entries) {
-      button(btns, entry.path, async () => {
-        const report = await verify(entry.text);
-        renderReport(this.result, report, sourceName + " › " + entry.path);
-      });
+      button(btns, shown(entry.path), () => this.verifyEntry(entry, sourceName));
     }
     const note = skippedSummary(result);
     if (note) this.zipBox.createDiv({ cls: "ks-help", text: note });
+  }
+
+  /** Verify one batch entry; a verifier error is shown, not dropped. */
+  private async verifyEntry(entry: ZipTextEntry, sourceName: string): Promise<void> {
+    try {
+      const report = await verify(entry.text);
+      renderReport(this.result, report, sourceName + " › " + entry.path);
+    } catch (e) {
+      showError(this.zipErr, "Could not verify " + shown(entry.path) + ": " + shown(e instanceof Error ? e.message : String(e)));
+    }
   }
 
   /** Programmatic entry used by the "Verify current note" command. */

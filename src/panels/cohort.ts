@@ -6,6 +6,7 @@
  */
 import { TFolder } from "obsidian";
 import { createKnobe, verify, type CreateResult } from "../engine/knobe-core";
+import { shown } from "../display";
 import {
   chainVerdict, cohortCsv, cohortRowFromReport, expectationFromReport,
   localToday, singleLine, slugify, sortCohortRows, unreadableCohortRow,
@@ -55,7 +56,7 @@ export class CohortPanel {
         }
         this.expectation = expectationFromReport(report);
         this.expBanner.setText(
-          "Submissions will be checked against: " + this.expectation.title.slice(0, 110) +
+          "Submissions will be checked against: " + shown(this.expectation.title, 110) +
           " (" + this.expectation.hashes.size + " accepted hash" + (this.expectation.hashes.size === 1 ? "" : "es") + ")."
         );
         this.expBanner.removeClass("ks-hidden");
@@ -181,7 +182,7 @@ export class CohortPanel {
       this.rcptHash.setText("payload_hash " + this.receipt.payloadHash);
       this.rcptChain.setText(
         this.expectation && this.expectation.stored
-          ? 'Anchored to "' + this.expectation.title.slice(0, 90) + '" as parents[0], payload_hash ' + this.expectation.stored + "."
+          ? 'Anchored to "' + shown(this.expectation.title, 90) + '" as parents[0], payload_hash ' + shown(this.expectation.stored) + "."
           : "No expectation loaded; the receipt records verdicts without a chain target."
       );
       this.rcptFileName.value = slugify(this.receipt.payload.title);
@@ -249,15 +250,16 @@ export class CohortPanel {
       const td = (text: string, cls?: string): void => {
         tr.createEl("td", { text, cls });
       };
-      td(row.file, "ks-mono");
-      td(row.title);
-      td(row.author);
+      // Every cell but the verdicts comes from a submitted file (or its name).
+      td(shown(row.file), "ks-mono");
+      td(shown(row.title));
+      td(shown(row.author));
       td(row.state, row.state === "verified" ? "ks-cok" : row.state === "verified-body-modified" ? "ks-cwarn" : "ks-cbad");
       td(row.conformance, row.conformance === "valid" ? "ks-cok" : row.conformance === "warnings" ? "ks-cwarn" : "ks-cbad");
-      td(row.ai, row.ai === "none declared" ? "ks-cneutral" : undefined);
+      td(shown(row.ai), row.ai === "none declared" ? "ks-cneutral" : undefined);
       const cv = chainVerdict(row, this.expectation);
       td(cv.text, "ks-" + cv.cls.slice(1));
-      td(row.review || "—", row.review ? undefined : "ks-cneutral");
+      td(row.review ? shown(row.review) : "—", row.review ? undefined : "ks-cneutral");
       if (row.state === "verified" || row.state === "verified-body-modified") okCount += 1;
       else badCount += 1;
       if (row.ai && row.ai !== "none declared") aiCount += 1;
@@ -265,7 +267,7 @@ export class CohortPanel {
     this.summary.setText(
       this.rows.length + " file" + (this.rows.length === 1 ? "" : "s") + " · " +
       okCount + " verified · " + badCount + " failed or unreadable · " + aiCount + " with an AI disclosure" +
-      (this.expectation ? ' · chain checked against "' + this.expectation.title + '"' : " · no chain expectation loaded")
+      (this.expectation ? ' · chain checked against "' + shown(this.expectation.title, 110) + '"' : " · no chain expectation loaded")
     );
     this.resultsBox.removeClass("ks-hidden");
     this.chainBox.addClass("ks-hidden");
@@ -285,18 +287,19 @@ export class CohortPanel {
     const rest = this.rows.filter((r) => inSetParents(r).length);
     const addItem = (r: CohortRow): void => {
       const div = this.chainBox.createDiv({ cls: "ks-chainitem" });
-      div.createDiv({ text: (r.title || r.file) + (r.author ? " — " + r.author : "") + " · " + r.state });
+      div.createDiv({ text: shown(r.title || r.file) + (r.author ? " — " + shown(r.author) : "") + " · " + r.state });
       for (const pa of inSetParents(r)) {
         const target = byHash.get(pa.payload_hash!)!;
         div.createDiv({
           cls: "ks-chainlink",
-          text: "↳ builds on " + (target.title || target.file) + " (" + (pa.relationship || "linked") + ", hash matches)",
+          // relationship is unchecked payload data: any JSON value, even an object.
+          text: "↳ builds on " + shown(target.title || target.file) + " (" + shown(pa.relationship || "linked", 60) + ", hash matches)",
         });
       }
       for (const pa of r.parents.filter((p) => p && typeof p.payload_hash === "string" && !byHash.has(p.payload_hash))) {
         div.createDiv({
           cls: "ks-chainlink",
-          text: "↳ builds on " + String(typeof pa.title === "string" ? pa.title : "an object").slice(0, 60) + " (not among the loaded files)",
+          text: "↳ builds on " + (typeof pa.title === "string" ? shown(pa.title, 60) : "an object") + " (not among the loaded files)",
         });
       }
     };

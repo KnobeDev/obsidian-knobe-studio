@@ -5,6 +5,7 @@
  * whole journey. Students load a journey here or on Create to start a step.
  */
 import { createKnobe, verify, type CreateResult } from "../engine/knobe-core";
+import { shown } from "../display";
 import {
   JKINDS, JPOLICIES, JSEALERS,
   buildJourneyBody, buildJourneyFields, journeyContextForInstructorStep,
@@ -216,7 +217,7 @@ export class JourneyPanel {
             }
             this.schedulePreview();
           });
-          lab.createSpan({ text: " Step " + (k + 1) + (this.steps[k].title ? ": " + this.steps[k].title : "") });
+          lab.createSpan({ text: " Step " + (k + 1) + (this.steps[k].title ? ": " + shown(this.steps[k].title, 60) : "") });
         }
       }
 
@@ -256,7 +257,7 @@ export class JourneyPanel {
     this.ctx.openCreateWithJourney({
       journeyCtx: journeyContextForInstructorStep(this.steps, i, this.course.value, this.term.value),
       journeyMap: { steps: journeyPayloadSteps(this.steps), currentIdx: i },
-      banner: "Sealing journey step " + (i + 1) + ": " + (s.title || "Untitled step") + ". The sealed hash will flow back into the journey.",
+      banner: "Sealing journey step " + (i + 1) + ": " + shown(s.title || "Untitled step", 90) + ". The sealed hash will flow back into the journey.",
       prefill: {
         title: s.title,
         contentType: kind.content_type,
@@ -322,11 +323,11 @@ export class JourneyPanel {
       spec_hash: typeof s.spec_hash === "string" ? s.spec_hash : "",
     }));
     this.loadedFrom = {
-      hash: report.stored ?? "",
+      hash: typeof report.stored === "string" ? report.stored : "",
       title: typeof report.payload?.title === "string" ? report.payload.title : "Untitled journey",
     };
     this.revisionNote.setText(
-      "Revising: " + this.loadedFrom.title.slice(0, 120) +
+      "Revising: " + shown(this.loadedFrom.title, 120) +
       ". Sealing will produce a new version that records this one as its superseded parent."
     );
     this.revisionNote.removeClass("ks-hidden");
@@ -345,7 +346,7 @@ export class JourneyPanel {
     }
     const journey: LoadedJourney = { course: j.course, term: j.term, title: j.title, steps: j.steps };
     const journeyTitle = typeof report.payload?.title === "string" ? report.payload.title : "Untitled journey";
-    const journeyHash = report.stored ?? "";
+    const journeyHash = typeof report.stored === "string" ? report.stored : "";
 
     this.pickerBox.empty();
     this.pickerBox.removeClass("ks-hidden");
@@ -355,7 +356,7 @@ export class JourneyPanel {
     const studentSteps = j.steps.map((s, i) => ({ s, i })).filter((x) => x.s.sealer === "student");
     const list = studentSteps.length ? studentSteps : j.steps.map((s, i) => ({ s, i }));
     for (const { s, i } of list) {
-      button(btns, "Step " + (i + 1) + ": " + (typeof s.title === "string" && s.title ? s.title : "Untitled step"), () => {
+      button(btns, "Step " + (i + 1) + ": " + (typeof s.title === "string" && s.title ? shown(s.title, 120) : "Untitled step"), () => {
         this.startStudentStep(journey, i, journeyHash, journeyTitle);
       });
     }
@@ -375,8 +376,8 @@ export class JourneyPanel {
       journeyCtx,
       journeyMap: { steps: journey.steps, currentIdx: idx },
       banner:
-        "Journey: " + journeyTitle.slice(0, 90) + " · Step " + (idx + 1) + " of " + journey.steps.length +
-        ": " + String(step.title ?? "Untitled step").slice(0, 90) + " · " + policy.label + ".",
+        "Journey: " + shown(journeyTitle, 90) + " · Step " + (idx + 1) + " of " + journey.steps.length +
+        ": " + shown(step.title ?? "Untitled step", 90) + " · " + policy.label + ".",
       prefill: {
         title: typeof step.title === "string" ? step.title : "",
         contentType: typeof step.content_type === "string" && step.content_type ? step.content_type : "original",
@@ -387,7 +388,8 @@ export class JourneyPanel {
         role1: "student_author",
         rights1: true,
         goodFaith: true,
-        represents: 'a submission for "' + (step.title || "this step") + '" (' + course + ")",
+        // step.title is unchecked journey data; concatenating an object would throw.
+        represents: 'a submission for "' + (typeof step.title === "string" && step.title ? step.title : "this step") + '" (' + course + ")",
         trustAs: "the student's own work at submission time",
         doNotInfer: [
           "that this represents the student's final or settled view",

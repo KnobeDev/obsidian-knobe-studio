@@ -88,7 +88,9 @@ export interface VerifyReport {
   conformance: Conformance;
   conformance_issues: string[];
   payload: KnobePayload | null;
-  stored: string | null;
+  /** The payload's payload_hash as stored: any JSON value, not only a
+   * string ("" when it is absent; null when it is null or the file is unreadable). */
+  stored: unknown;
   computed: string | null;
   body_verified: BodyVerified | null;
   reason?: string | null;

@@ -588,7 +588,7 @@ export function cohortRowFromReport(fileName: string, report: VerifyReport): Coh
       : "none declared",
     chainHashes,
     review: review && typeof review.submission_status === "string" ? review.submission_status : "",
-    stored: report.stored,
+    stored: typeof report.stored === "string" ? report.stored : null,
     parents: Array.isArray(p.parents) ? p.parents : [],
   };
 }
@@ -646,7 +646,8 @@ export function cohortCsv(rows: CohortRow[], expectation: CohortExpectation | nu
 /** Accepted chain hashes from an expectation file: its own hash plus any sealed step hashes. */
 export function expectationFromReport(report: VerifyReport): CohortExpectation {
   const hashes = new Set<string>();
-  if (report.stored) hashes.add(report.stored);
+  const stored = typeof report.stored === "string" ? report.stored : null;
+  if (stored) hashes.add(stored);
   const j = report.payload?.journey;
   if (j && Array.isArray(j.steps)) {
     for (const s of j.steps) {
@@ -656,7 +657,7 @@ export function expectationFromReport(report: VerifyReport): CohortExpectation {
   return {
     title: typeof report.payload?.title === "string" ? report.payload.title : "Untitled",
     hashes,
-    stored: report.stored,
+    stored,
   };
 }
 

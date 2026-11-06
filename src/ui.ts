@@ -1,9 +1,11 @@
 /**
  * ui.ts — shared DOM widgets for the Studio dashboard, built on Obsidian's
  * createEl helpers. All dynamic content is set via textContent (never
- * innerHTML) because every KNOBE field is untrusted input.
+ * innerHTML) because every KNOBE field is untrusted input; payload-derived
+ * text also goes through shown() (display.ts).
  */
 import type { VerifyReport } from "./engine/knobe-core";
+import { REPORT_TEXT_LIMIT, shown, storedHashText } from "./display";
 
 export const STATE_META: Record<string, { cls: string; sym: string; label: string }> = {
   verified: { cls: "v-ok", sym: "✓", label: "Verified. The sealed record is intact." },
@@ -37,7 +39,7 @@ export function renderReport(container: HTMLElement, report: VerifyReport, sourc
   sym.setAttribute("aria-hidden", "true");
   const vb = verdict.createDiv();
   vb.createDiv({ cls: "ks-vlabel", text: meta.label });
-  if (sourceName) vb.createDiv({ cls: "ks-vfile", text: sourceName });
+  if (sourceName) vb.createDiv({ cls: "ks-vfile", text: shown(sourceName) });
 
   const tags = container.createDiv({ cls: "ks-tagsrow" });
   tagChip(tags, "integrity: " + report.state, stateTagCls(report.state));
@@ -53,19 +55,20 @@ export function renderReport(container: HTMLElement, report: VerifyReport, sourc
     div.createEl("dt", { text: label });
     div.createEl("dd", { text: value, cls: mono ? "ks-mono" : undefined });
   };
-  const title = report.payload && typeof report.payload.title === "string" ? report.payload.title.slice(0, 160) : null;
+  const title = report.payload && typeof report.payload.title === "string" ? shown(report.payload.title, 160) : null;
   if (title) rrow("title", title);
-  if (report.stored) rrow("stored hash", report.stored, true);
+  const stored = storedHashText(report.stored);
+  if (stored) rrow("stored hash", stored, true);
   if (report.state === "failed" && report.computed) rrow("computed hash", report.computed, true);
   if (report.multiple_blocks) {
     rrow("payload blocks", report.block_count + " found; block " + report.block_used + " evaluated");
   }
-  if (report.reason) rrow("reason", String(report.reason));
+  if (report.reason) rrow("reason", shown(report.reason, REPORT_TEXT_LIMIT));
   if (!dl.childElementCount) dl.remove();
 
   if (report.conformance_issues && report.conformance_issues.length) {
     const ul = container.createEl("ul", { cls: "ks-issues" });
-    for (const issue of report.conformance_issues) ul.createEl("li", { text: issue });
+    for (const issue of report.conformance_issues) ul.createEl("li", { text: shown(issue, REPORT_TEXT_LIMIT) });
   }
 
   const notes = container.createDiv({ cls: "ks-notes" });

@@ -11,6 +11,7 @@ import {
 } from "../ui";
 import { buildIntake } from "../intake";
 import { read } from "../engine/knobe-core";
+import { shown, storedHashText } from "../display";
 import type { StudioContext } from "../panel-context";
 
 export class AdaptPanel {
@@ -138,8 +139,8 @@ export class AdaptPanel {
     const srcSources = report.payload?.attribution?.sources ?? [];
     const srcAuthor = srcSources[0] && typeof srcSources[0].author === "string" ? srcSources[0].author : "";
     this.source = { text, report, title, srcAuthor };
-    this.origTitle.setText(title.slice(0, 160));
-    this.origHash.setText("payload_hash " + report.stored);
+    this.origTitle.setText(shown(title, 160));
+    this.origHash.setText("payload_hash " + (storedHashText(report.stored) ?? "(none)"));
     this.origTags.empty();
     tagChip(this.origTags, "integrity: " + report.state, stateTagCls(report.state));
     tagChip(this.origTags, "conformance: " + report.conformance, conformanceTagCls(report.conformance));
