@@ -12,30 +12,30 @@ python3 lens.py minimal-valid.knobe.md
 
 ### Core six (integrity model)
 
-| file | expected status | expected conformance |
-|------|----------------|----------------------|
-| `minimal-valid.knobe.md` | verified | valid |
-| `full-valid.knobe.md` | verified | valid |
-| `body-modified.knobe.md` | verified-body-modified | valid |
-| `payload-modified.knobe.md` | failed | valid (where readable) |
-| `unreadable.knobe.md` | unreadable | invalid |
-| `unicode-valid.knobe.md` | verified | valid |
+| file | expected status | expected body_verified | expected conformance |
+|------|----------------|------------------------|----------------------|
+| `minimal-valid.knobe.md` | verified | omitted | valid |
+| `full-valid.knobe.md` | verified | yes | valid |
+| `body-modified.knobe.md` | verified-body-modified | modified | valid |
+| `payload-modified.knobe.md` | failed | omitted | valid (where readable) |
+| `unreadable.knobe.md` | unreadable | — | invalid |
+| `unicode-valid.knobe.md` | verified | yes | valid |
 
 ### Additional three (extended spec rules)
 
-| file | expected status | expected conformance | notes |
-|------|----------------|----------------------|-------|
-| `numeric-violation.knobe.md` | verified | invalid | bare integer in payload triggers §5 violation; integrity intact |
-| `omitted-body-hash.knobe.md` | verified | valid | no body_hash field; body_verified MUST be omitted |
-| `multi-block.knobe.md` | verified (last block) | warnings | two payload blocks; verifier surfaces a warning and MUST report body_verified omitted |
+| file | expected status | expected body_verified | expected conformance | notes |
+|------|----------------|------------------------|----------------------|-------|
+| `numeric-violation.knobe.md` | verified | yes | invalid | bare integer in payload triggers §5 violation; integrity intact |
+| `omitted-body-hash.knobe.md` | verified | omitted | valid | no body_hash field; body_verified MUST be omitted |
+| `multi-block.knobe.md` | verified (last block) | omitted | warnings | two payload blocks; verifier surfaces a warning and MUST report body_verified omitted |
 
 ## Adversarial hardening set
 
-The [`adversarial/`](adversarial/) subdirectory contains ten additional hostile-input files — duplicate keys, NFC key collisions, control-character injection, unsupported spec versions — with expected results in [`adversarial/README.md`](adversarial/README.md). They are not part of the canonical-compatibility bar; they test verifier robustness.
+The [`adversarial/`](adversarial/) subdirectory contains seventeen additional hostile-input files — duplicate keys, NFC key collisions, control-character and bidi injection, unsupported spec versions, numbers and strings with no canonical form — with expected results in [`adversarial/README.md`](adversarial/README.md). They are not part of the canonical-compatibility bar; they test verifier robustness.
 
 ## Interpretation set
 
-The [`interpretation/`](interpretation/) subdirectory contains six files pinning the documented rulings in [ERRATA.md](../ERRATA.md): questions the specification text left open, reported by an implementer building from the text alone, each resolved authoritatively and fixed by a vector both reference verifiers agree on. Expected results in [`interpretation/README.md`](interpretation/README.md).
+The [`interpretation/`](interpretation/) subdirectory contains seven files pinning the documented rulings in [ERRATA.md](../ERRATA.md): questions the specification text left open: six reported from the steward-commissioned Go verifier (built from the specification text, with lens.py consulted for ambiguous edge cases), and one (E12) proposed in PR #12, each resolved authoritatively and fixed by a vector both reference verifiers agree on. Expected results in [`interpretation/README.md`](interpretation/README.md).
 
 ## Notes
 

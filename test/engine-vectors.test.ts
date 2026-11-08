@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   createKnobe,
@@ -9,60 +9,94 @@ import {
   verify,
 } from "../src/engine/knobe-core.js";
 
-const vector = (name: string): string =>
-  readFileSync(join(__dirname, "vectors", name), "utf-8");
+const VECTORS = join(__dirname, "vectors");
+const vector = (name: string): string => readFileSync(join(VECTORS, name), "utf-8");
 
-describe("engine reproduces the nine official test vector verdicts", () => {
-  const CASES: Array<[string, string, string]> = [
-    ["minimal-valid.knobe.md", "verified", "valid"],
-    ["full-valid.knobe.md", "verified", "valid"],
-    ["body-modified.knobe.md", "verified-body-modified", "valid"],
-    ["payload-modified.knobe.md", "failed", "valid"],
-    ["unreadable.knobe.md", "unreadable", "invalid"],
-    ["unicode-valid.knobe.md", "verified", "valid"],
-    ["numeric-violation.knobe.md", "verified", "invalid"],
-    ["omitted-body-hash.knobe.md", "verified", "valid"],
-    ["multi-block.knobe.md", "verified", "warnings"],
-  ];
+/**
+ * Expected results are read from the bundled READMEs' tables, which the drift
+ * guard (upstream-sync.test.ts) keeps byte-identical to upstream. A vector
+ * added upstream is therefore checked here as soon as it is vendored, and a
+ * vector without a README row (or a row without a file) fails the suite.
+ */
+interface Expected {
+  file: string;
+  state: string;
+  body: string | null; // null: the table shows "—" (unreadable)
+  conformance: string;
+}
 
-  test.each(CASES)("%s → %s / %s", async (file, state, conformance) => {
-    const report = await verify(vector(file));
-    expect(report.state).toBe(state);
-    expect(report.conformance).toBe(conformance);
-  });
-
-  test("omitted-body-hash reports body_verified omitted", async () => {
-    const report = await verify(vector("omitted-body-hash.knobe.md"));
-    expect(report.body_verified).toBe("omitted");
-  });
-
-  test("multi-block reports body_verified omitted", async () => {
-    const report = await verify(vector("multi-block.knobe.md"));
-    expect(report.body_verified).toBe("omitted");
-  });
-});
-
-// Expected results transcribed from the upstream adversarial/ and
-// interpretation/ READMEs. Unreadable files must report body_verified as
-// omitted; machine output may spell that "omitted" or null (erratum E11).
+const EM_DASH = String.fromCodePoint(0x2014);
+// Unreadable files must report body_verified as omitted; machine output may
+// spell that "omitted" or null (erratum E11).
 const OMITTED = ["omitted", null];
 
-describe("engine reproduces the adversarial vector verdicts", () => {
-  const CASES: Array<[string, string, string | null, string]> = [
-    ["bad-attribution-sources-type.knobe.md", "verified", "omitted", "invalid"],
-    ["bad-body-hash-format.knobe.md", "verified-body-modified", "modified", "invalid"],
-    ["bad-created-date.knobe.md", "verified", "omitted", "invalid"],
-    ["control-character-title.knobe.md", "verified", "omitted", "valid"],
-    ["duplicate-key.knobe.md", "unreadable", null, "invalid"],
-    ["multi-block-warning.knobe.md", "verified", "omitted", "warnings"],
-    ["nfc-key-collision.knobe.md", "unreadable", null, "invalid"],
-    ["no-frontmatter-valid-payload.knobe.md", "verified", "omitted", "invalid"],
-    ["payload-array.knobe.md", "unreadable", null, "invalid"],
-    ["unsupported-spec-version.knobe.md", "unreadable", null, "invalid"],
-  ];
+/** First word of a cell: "verified (last block)" -> "verified". */
+const firstWord = (cell: string): string => cell.split(/[\s(]/)[0] ?? "";
 
-  test.each(CASES)("%s → %s / %s / %s", async (file, state, body, conformance) => {
-    const report = await verify(vector("adversarial/" + file));
+/**
+ * Rows are read by column position, so every row must sit under a header
+ * whose columns are checked first: a renamed, missing or reordered header
+ * fails here instead of silently comparing the wrong columns.
+ */
+function expectations(dir: string): Expected[] {
+  const readme = join(dir, "README.md");
+  const rows: Expected[] = [];
+  let underCheckedHeader = false;
+  for (const line of readFileSync(join(VECTORS, readme), "utf-8").split("\n")) {
+    if (!line.startsWith("|")) {
+      underCheckedHeader = false;
+      continue;
+    }
+    const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+    if (cells[0]?.toLowerCase() === "file") {
+      expect(cells.slice(1, 4).map((c) => c.replace(/^expected /, "")), readme).toEqual([
+        "status",
+        "body_verified",
+        "conformance",
+      ]);
+      underCheckedHeader = true;
+      continue;
+    }
+    const file = /^`([^`]+\.knobe\.md)`$/.exec(cells[0] ?? "")?.[1];
+    if (!file) continue;
+    expect(underCheckedHeader, `${readme}: ${file} is not under a recognized header`).toBe(true);
+    const row: Expected = {
+      file,
+      state: firstWord(cells[1] ?? ""),
+      body: firstWord(cells[2] ?? ""),
+      conformance: firstWord(cells[3] ?? ""),
+    };
+    expect(row.state, `${readme}: ${file} status`).toMatch(/^[a-z-]+$/);
+    expect(row.conformance, `${readme}: ${file} conformance`).toMatch(/^[a-z]+$/);
+    expect(row.body, `${readme}: ${file} body_verified`).toMatch(new RegExp(`^(?:[a-z]+|${EM_DASH})$`));
+    rows.push({ ...row, body: row.body === EM_DASH ? null : row.body });
+  }
+  expect(rows.length, `${readme} has no vector rows`).toBeGreaterThan(0);
+  return rows;
+}
+
+const bundled = (dir: string): string[] =>
+  readdirSync(join(VECTORS, dir)).filter((f) => f.endsWith(".knobe.md")).sort();
+
+describe.each([
+  { set: "core", dir: "" },
+  { set: "adversarial", dir: "adversarial" },
+  { set: "interpretation", dir: "interpretation" },
+])("engine reproduces the $set vectors' published results", ({ set, dir }) => {
+  const rows = expectations(dir);
+
+  test("every bundled vector has exactly one README row, and every row a file", () => {
+    expect(rows.map((r) => r.file).sort()).toEqual(bundled(dir));
+  });
+
+  if (set === "core") {
+    test("the core set is the nine conformance vectors of spec §10", () => {
+      expect(rows).toHaveLength(9);
+    });
+  }
+
+  test.each(rows)("$file → $state / $body / $conformance", async ({ file, state, body, conformance }) => {
+    const report = await verify(vector(join(dir, file)));
     expect(report.state).toBe(state);
     expect(report.conformance).toBe(conformance);
     if (body === null) expect(OMITTED).toContain(report.body_verified);
@@ -70,24 +104,7 @@ describe("engine reproduces the adversarial vector verdicts", () => {
   });
 });
 
-describe("engine follows the ERRATA rulings pinned by the interpretation vectors", () => {
-  const CASES: Array<[string, string, string | null, string]> = [
-    ["boolean-null-values.knobe.md", "verified", "omitted", "valid"],
-    ["spec-version-frontmatter-mismatch.knobe.md", "verified", "omitted", "warnings"],
-    ["begin-marker-mid-line.knobe.md", "verified", "yes", "valid"],
-    ["base64-unpadded.knobe.md", "unreadable", null, "invalid"],
-    ["attribution-missing.knobe.md", "verified", "omitted", "invalid"],
-    ["astral-unicode-literal.knobe.md", "verified", "omitted", "valid"],
-  ];
-
-  test.each(CASES)("%s → %s / %s / %s", async (file, state, body, conformance) => {
-    const report = await verify(vector("interpretation/" + file));
-    expect(report.state).toBe(state);
-    expect(report.conformance).toBe(conformance);
-    if (body === null) expect(OMITTED).toContain(report.body_verified);
-    else expect(report.body_verified).toBe(body);
-  });
-
+describe("engine follows ERRATA details the README tables do not show", () => {
   test("E5: frontmatter/payload spec_version disagreement names both values", async () => {
     const report = await verify(vector("interpretation/spec-version-frontmatter-mismatch.knobe.md"));
     expect(report.conformance_issues).toContain(

@@ -1,6 +1,6 @@
 # KNOBE Protocol v1 — Interpretation Set
 
-Six additional `.knobe.md` files pinning the documented interpretations in [ERRATA.md](../../ERRATA.md): places where an implementer building from the specification text alone reported a genuine ambiguity, and the steward has ruled which reading is authoritative. These are **not** part of the canonical-compatibility bar (an implementation is canonically compatible if it reproduces the nine core results in the parent directory), but a verifier that matches the reference on all six is following the published rulings, and each ruling cites its vector here.
+Seven additional `.knobe.md` files pinning the documented interpretations in [ERRATA.md](../../ERRATA.md): places where the specification text left a genuine ambiguity (six raised by building the steward-commissioned Go verifier from the specification text, with lens.py consulted for ambiguous edge cases; one, E12, proposed in PR #12), and the steward has ruled which reading is authoritative. These are **not** part of the canonical-compatibility bar (an implementation is canonically compatible if it reproduces the nine core results in the parent directory), but a verifier that matches the reference on all seven is following the published rulings, and each ruling cites its vector here.
 
 Every expected result below was produced by both reference implementations (`lens.py` and `knobe-core.js`) in agreement before publication. Verify each from the repository root with:
 
@@ -18,6 +18,7 @@ python3 lens.py test-vectors/interpretation/<file>
 | `base64-unpadded.knobe.md` | unreadable | — | invalid | RFC 4648 §4 padding is required; a payload block whose trailing `=` characters are missing cannot be decoded and the file is unreadable ([E7](../../ERRATA.md)) |
 | `attribution-missing.knobe.md` | verified | omitted | invalid | a wholly absent `attribution` reports exactly one issue (`required field missing: attribution`), not a cascade into `attribution.sources` ([E9](../../ERRATA.md)) |
 | `astral-unicode-literal.knobe.md` | verified | omitted | valid | code points above U+FFFF serialize as literal UTF-8 in the canonical form, never as `\uXXXX` escape pairs ([E8](../../ERRATA.md)) |
+| `nel-block-whitespace.knobe.md` | unreadable | — | invalid | only ASCII space, tab, CR and LF may be stripped from a payload block; U+0085 (NEXT LINE) inside the block makes the Base64 invalid and the file unreadable, though the same block without it verifies ([E12](../../ERRATA.md)) |
 
 A `—` in the body_verified column is the mandated `omitted` of spec §7 for unreadable files, which machine output may spell as the string `omitted` or as JSON `null`; either spelling is conforming (see [E11](../../ERRATA.md)).
 

@@ -855,13 +855,29 @@ export async function read(input) {
 // Crystallizer: seal / create / transform
 // ---------------------------------------------------------------------------
 
+/** Refuse a string containing a code point unassigned in this engine's
+ * Unicode tables. NFC of such a string can change in a later Unicode version,
+ * so its payload hash could differ between verifiers (issue #33). */
+const UNASSIGNED = /\p{Cn}/u;
+function assertAssigned(s) {
+  const m = UNASSIGNED.exec(s);
+  if (m) {
+    const cp = m[0].codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+    throw new Error(`the text contains U+${cp}, a character this software's Unicode version ` +
+      "does not recognize, so verifiers could disagree about its seal. Remove it, or use " +
+      "newer software (for Studio, an up-to-date browser).");
+  }
+  return s;
+}
+
 /** Recursively NFC-normalize keys and string values, coerce bare numbers to
  * strings (spec §5 requires string numerics), and drop undefined values.
+ * Refuses unassigned code points (see assertAssigned).
  * Used at authoring intake so created payloads are canonical at rest. */
 function normalizePayloadForAuthoring(x) {
   if (x === null) return null;
   switch (typeof x) {
-    case "string": return nfc(x);
+    case "string": return nfc(assertAssigned(x));
     case "boolean": return x;
     case "number": return pyNumberRepr(x);   // §5: numerics as strings
     case "bigint": return x.toString();
@@ -873,7 +889,7 @@ function normalizePayloadForAuthoring(x) {
   const out = {};
   for (const k of Object.keys(x)) {
     const v = normalizePayloadForAuthoring(x[k]);
-    if (v !== undefined) out[nfc(k)] = v;
+    if (v !== undefined) out[nfc(assertAssigned(k))] = v;
   }
   return out;
 }
