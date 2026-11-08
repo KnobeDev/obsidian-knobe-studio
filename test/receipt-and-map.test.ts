@@ -127,6 +127,11 @@ describe("journey map model", () => {
     expect(m.nodes[0]!.title.length).toBeLessThanOrEqual(61);
   });
 
+  test("a sealed step's hash is escaped and cut for display", () => {
+    const m = journeyMapModel([{ n: 1, title: "t", spec_hash: "ab" + RLO + "cd" + "e".repeat(200), sealer: "student", kind: "writing", ai_policy: "prohibited", builds_on: [] }], null);
+    expect(m.nodes[0]!.specHash).toBe("ab\\u202ecd" + "e".repeat(90) + "\u2026");
+  });
+
   test("an empty or missing step list yields no nodes", () => {
     expect(journeyMapModel([], null).nodes).toEqual([]);
   });

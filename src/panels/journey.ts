@@ -221,7 +221,7 @@ export class JourneyPanel {
         }
       }
 
-      if (s.spec_hash) card.createDiv({ cls: "ks-mono ks-sealedhash", text: "sealed: " + s.spec_hash });
+      if (s.spec_hash) card.createDiv({ cls: "ks-mono ks-sealedhash", text: "sealed: " + shown(s.spec_hash, 100) });
       if (s.sealer === "instructor") {
         button(card.createDiv({ cls: "ks-rowbtns" }),
           s.spec_hash ? "Reseal this step in Create" : "Seal this step in Create",

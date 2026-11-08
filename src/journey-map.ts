@@ -2,10 +2,11 @@
  * journey-map.ts — pure model for the journey map ported from
  * knobe.org/studio: a "you are here" strip of step nodes for any loaded
  * journey. Journey files can come from third parties, so every displayed
- * string passes through the engine's safe() (control and bidi characters
- * escaped) and builds_on values are coerced, range-checked, and self-excluded.
+ * string passes through shown() (control and bidi characters escaped, cut at
+ * a bounded cost) and builds_on values are coerced, range-checked, and
+ * self-excluded.
  */
-import { safe } from "./engine/knobe-core";
+import { shown } from "./display";
 import { JPOLICIES, JSEALERS } from "./studio-core";
 
 export interface JourneyMapNode {
@@ -43,11 +44,11 @@ export function journeyMapModel(
       .map(Number)
       .filter((n) => Number.isInteger(n) && n >= 1 && n <= count && n !== i + 1);
     return {
-      kicker: "Step " + (i + 1) + " · " + (JSEALERS[sealer] ?? safe(sealer || "unassigned", 20)),
-      title: safe(typeof s.title === "string" && s.title ? s.title : "Untitled step", 60),
+      kicker: "Step " + (i + 1) + " · " + (JSEALERS[sealer] ?? shown(sealer || "unassigned", 20)),
+      title: shown(typeof s.title === "string" && s.title ? s.title : "Untitled step", 60),
       aiLabel: policy.label,
       buildsOn,
-      specHash: typeof s.spec_hash === "string" && s.spec_hash ? s.spec_hash : null,
+      specHash: typeof s.spec_hash === "string" && s.spec_hash ? shown(s.spec_hash, 100) : null,
       isHere: i === currentIdx,
     };
   });

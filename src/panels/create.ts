@@ -19,6 +19,7 @@ import {
   announce, button, checkField, copyToClipboard, debounce, errorBox, helpText, hideError,
   row2, sectionHeading, selectField, showError, textAreaField, textField,
 } from "../ui";
+import { REPORT_TEXT_LIMIT, shown } from "../display";
 import { buildMarkdownToolbar } from "../md-toolbar";
 import { renderJourneyMap } from "../journey-map-view";
 import type { JourneyPrime, StudioContext } from "../panel-context";
@@ -339,7 +340,7 @@ export class CreatePanel {
     if (ui === "disclose") {
       const detail = args.journeyCtx.assignmentContext.ai_policy_detail;
       this.aiPolicyNote.setText(
-        (typeof detail === "string" ? detail + " " : "") +
+        (typeof detail === "string" ? shown(detail, REPORT_TEXT_LIMIT) + " " : "") +
         "If you used AI, describe specifically what it did and what you did yourself. The disclosure is sealed into the file."
       );
     } else if (ui === "attest") {

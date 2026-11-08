@@ -40,12 +40,26 @@ function cut(text: string, limit: number): string {
   return points.slice(0, end).join("") + "\u2026";
 }
 
+/** The first `limit + 1` code points of text, which is all cut() needs to
+ * decide on an ellipsis. safe() escapes each code point on its own, so escaping
+ * only this head gives the same result as escaping the whole text, at a cost
+ * bounded by `limit`: a hostile 10 MB title must not stall the UI. */
+function head(text: string, limit: number): string {
+  let out = "";
+  let n = 0;
+  for (const ch of text) {
+    if (n++ > limit) break;
+    out += ch;
+  }
+  return out;
+}
+
 /** The engine's safe() (control, bidi and line-separator characters and
  * unpaired surrogates escaped), cut at `limit` code points. A non-string is
  * shown as its JSON text, escaped the same way. */
 export function shown(value: unknown, limit = 300): string {
   const text = typeof value === "string" ? value : jsonText(value) ?? UNSHOWABLE;
-  return cut(safe(text, null), limit);
+  return cut(safe(head(text, limit), null), limit);
 }
 
 /** A stored payload_hash for display, or null when there is none. The engine
