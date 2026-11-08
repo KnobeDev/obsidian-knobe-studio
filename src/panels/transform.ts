@@ -111,7 +111,7 @@ export class TransformPanel {
     this.origTags.empty();
     tagChip(this.origTags, "integrity: " + report.state, stateTagCls(report.state));
     tagChip(this.origTags, "conformance: " + report.conformance, conformanceTagCls(report.conformance));
-    const parentCount = Array.isArray(report.payload?.parents) ? report.payload!.parents!.length : 0;
+    const parentCount = Array.isArray(report.payload?.parents) ? report.payload.parents.length : 0;
     tagChip(this.origTags, "parents: " + parentCount, "neutral");
 
     const p = permits(report, "transform");

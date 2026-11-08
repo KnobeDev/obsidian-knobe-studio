@@ -1,14 +1,15 @@
 /**
- * api.ts — the cross-plugin contract between the KNOBE Studio plugin and the
- * separate KNOBE Teaching Studio plugin. Studio owns the tools, the vault
- * scoping, and the demo state; the Teaching Studio plugin consumes this surface so
- * it never imports Studio's internals. Both plugins bundle this file.
+ * api.ts — the contract between the KNOBE Studio plugin and its Teaching
+ * Studio dashboard view. Studio owns the tools, the vault scoping, and the
+ * demo state; the dashboard reaches them only through this surface, so it
+ * never imports Studio's internals.
+ *
+ * Studio also keeps this object on `plugin.knobeApi`: the retired standalone
+ * Teaching Studio plugin (0.3.2 and earlier) reads it there, so a vault that
+ * still has that plugin enabled keeps working until it is uninstalled.
  */
-import type { App } from "obsidian";
 import type { TabId } from "./panel-context";
 import type { StudioAppearance } from "./settings";
-
-export const KNOBE_STUDIO_ID = "knobe-studio";
 
 export interface KnobeStudioApi {
   /** Open the Studio dashboard focused on a given tab. */
@@ -24,23 +25,4 @@ export interface KnobeStudioApi {
   defaultAuthor(): string;
   openAfterSeal(): boolean;
   appearance(): StudioAppearance;
-}
-
-interface WithKnobeApi {
-  knobeApi?: KnobeStudioApi;
-}
-
-interface AppWithPlugins {
-  plugins?: { plugins?: Record<string, WithKnobeApi | undefined> };
-}
-
-/**
- * Resolve the Studio plugin's API, or null if the Studio plugin is not
- * installed/enabled yet. Call this lazily (per action / per view open) rather
- * than caching, since plugin load order is not guaranteed.
- */
-export function getKnobeStudioApi(app: App): KnobeStudioApi | null {
-  const registry = (app as unknown as AppWithPlugins).plugins;
-  const studio = registry?.plugins?.[KNOBE_STUDIO_ID];
-  return studio?.knobeApi ?? null;
 }

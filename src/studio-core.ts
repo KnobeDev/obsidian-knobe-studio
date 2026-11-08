@@ -4,15 +4,36 @@
  * engine's createKnobe/transformKnobe argument shapes, so the Obsidian view
  * layer stays thin and this layer stays unit-testable.
  */
-import type { CreateArgs, JourneyPayloadStep, VerifyReport } from "./engine/knobe-core";
+import { canonicalize, type CreateArgs, type JourneyPayloadStep, type VerifyReport } from "./engine/knobe-core";
 
 // ---- small utilities -------------------------------------------------------
 
+/** A form or payload value as plain text. A string passes through, other
+ * scalars are written out, null and undefined are empty, and anything else is
+ * its JSON text. Never throws: the parser builds objects with no prototype,
+ * which String() cannot convert. */
+export const plainText = (v: unknown): string => {
+  if (typeof v === "string") return v;
+  if (v === null || v === undefined) return "";
+  if (typeof v === "number" || typeof v === "boolean" || typeof v === "bigint") return String(v);
+  try {
+    return canonicalize(v);
+  } catch {
+    return "";
+  }
+};
+
+/** table[key] only when the table itself defines key, so a payload value such
+ * as "constructor" or "toString" is not looked up on Object.prototype. */
+export function ownEntry<T>(table: Record<string, T>, key: string): T | undefined {
+  return Object.prototype.hasOwnProperty.call(table, key) ? table[key] : undefined;
+}
+
 export const singleLine = (v: unknown): string =>
-  String(v ?? "").replace(/[\r\n]+/g, " ").trim();
+  plainText(v).replace(/[\r\n]+/g, " ").trim();
 
 export const linesToArray = (v: unknown): string[] =>
-  String(v ?? "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  plainText(v).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
 export const localToday = (): string => {
   const d = new Date();
@@ -24,7 +45,7 @@ export const localToday = (): string => {
 };
 
 export const slugify = (title: unknown): string => {
-  const s = String(title ?? "")
+  const s = plainText(title)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -330,6 +351,44 @@ export interface JourneyStep {
   spec_hash: string;
 }
 
+/** v when it is a string naming an entry of table, else the fallback. */
+export function knownKey(table: Record<string, unknown>, v: unknown, fallback: string): string {
+  return typeof v === "string" && ownEntry(table, v) !== undefined ? v : fallback;
+}
+
+/** The AI-policy entry for a payload value; anything unknown or non-string is "not applicable". */
+export function policyFor(v: unknown): (typeof JPOLICIES)[string] {
+  return ownEntry(JPOLICIES, typeof v === "string" ? v : "") ?? JPOLICIES.not_applicable;
+}
+
+/** A payload's builds_on as whole step numbers (1-based); anything else is dropped. */
+function stepNumbers(v: unknown): number[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((n) => (typeof n === "number" || typeof n === "string" ? Number(n) : NaN))
+    .filter((n) => Number.isInteger(n));
+}
+
+/** Instructor flow: the journey maker's editable steps from a loaded journey's
+ * payload steps. A hostile journey can hold any JSON value anywhere, so every
+ * field is type-checked and unknown sealers, kinds and policies get defaults. */
+export function journeyStepsFromPayload(steps: ReadonlyArray<unknown>): JourneyStep[] {
+  const text = (v: unknown): string => (typeof v === "string" ? v : "");
+  return steps.map((raw) => {
+    const s: Record<string, unknown> = raw !== null && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    return {
+      title: text(s.title),
+      sealer: knownKey(JSEALERS, s.sealer, "student"),
+      kind: knownKey(JKINDS, s.kind, "writing"),
+      ai_policy: knownKey(JPOLICIES, s.ai_policy, "not_applicable"),
+      ai_detail: text(s.ai_policy_detail),
+      expectations: text(s.expectations),
+      builds_on: stepNumbers(s.builds_on).map((n) => n - 1).filter((n) => n >= 0),
+      spec_hash: text(s.spec_hash),
+    };
+  });
+}
+
 export interface JourneyMeta {
   course: string;
   term: string;
@@ -472,18 +531,18 @@ export function journeyContextForStep(
   const step = journey.steps[stepIndex];
   if (!step) throw new Error("The journey has no step " + (stepIndex + 1) + ".");
   const course = typeof journey.course === "string" ? journey.course : "this course";
-  const policy = JPOLICIES[String(step.ai_policy)] ?? JPOLICIES.not_applicable;
+  const policy = policyFor(step.ai_policy);
 
-  const buildsOn = Array.isArray(step.builds_on) ? step.builds_on : [];
-  const parentSteps = buildsOn
-    .map((n) => journey.steps[Number(n) - 1])
+  const parentSteps = stepNumbers(step.builds_on)
+    .map((n) => journey.steps[n - 1])
     .filter((s): s is JourneyPayloadStep => !!s && typeof s.spec_hash === "string" && !!s.spec_hash);
   const rel = typeof step.relationship === "string" && step.relationship ? step.relationship : "synthesis_input";
 
   const assignmentContext: Record<string, unknown> = {
     course,
-    ai_policy: step.ai_policy || "not_applicable",
-    assignment_type: step.kind || "writing",
+    // Kept as the journey wrote them, but only when they are strings.
+    ai_policy: typeof step.ai_policy === "string" && step.ai_policy ? step.ai_policy : "not_applicable",
+    assignment_type: typeof step.kind === "string" && step.kind ? step.kind : "writing",
     journey_knobe_hash: journeyHash,
   };
   if (typeof step.ai_policy_detail === "string" && step.ai_policy_detail) {
@@ -573,10 +632,10 @@ export function cohortRowFromReport(fileName: string, report: VerifyReport): Coh
   (Array.isArray(p.parents) ? p.parents : []).forEach((pa) => {
     if (pa && typeof pa.payload_hash === "string") chainHashes.push(pa.payload_hash);
   });
-  const ac = (p.assignment_context ?? {}) as Record<string, unknown>;
+  const ac = p.assignment_context ?? {};
   if (typeof ac.assignment_knobe_hash === "string") chainHashes.push(ac.assignment_knobe_hash);
   if (typeof ac.journey_knobe_hash === "string") chainHashes.push(ac.journey_knobe_hash);
-  const review = p.education_review as Record<string, unknown> | undefined;
+  const review = p.education_review;
   return {
     file: fileName,
     title: typeof p.title === "string" ? truncate(p.title, 80) : "",
@@ -627,7 +686,7 @@ export function cohortCsv(rows: CohortRow[], expectation: CohortExpectation | nu
   // the CSV is opened in Excel/Sheets: neutralize formula injection (CWE-1236)
   // by prefixing leading =, +, -, @, tab, or CR with an apostrophe.
   const esc = (v: unknown): string => {
-    let s = String(v ?? "");
+    let s = plainText(v);
     if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return '"' + s.replace(/"/g, '""') + '"';
   };
@@ -691,8 +750,8 @@ export function cleanupAdaptText(before: string): string {
   let t = before.replace(/\r\n/g, "\n");
   t = t.replace(/[‘’‛]/g, "'").replace(/[“”‟]/g, '"');
   t = t.replace(/…/g, "...")
-    .replace(/[  -  　]/g, " ")
-    .replace(/[​-‍﻿]/g, "");
+    .replace(/[\u00a0\u2000-\u200a\u202f\u3000]/g, " ")
+    .replace(/[\u200b-\u200d\ufeff]/g, "");
   t = t.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>\s*/gi, "\n\n").replace(/<p[^>]*>/gi, "\n\n");
   t = t.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'");

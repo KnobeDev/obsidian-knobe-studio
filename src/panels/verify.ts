@@ -67,7 +67,7 @@ export class VerifyPanel {
       return;
     }
     if (result.entries.length === 1) {
-      const only = result.entries[0]!;
+      const only = result.entries[0];
       void this.verifyEntry(only, sourceName);
       this.zipBox.addClass("ks-hidden");
       const note = skippedSummary(result);

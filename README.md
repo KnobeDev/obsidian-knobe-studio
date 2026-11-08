@@ -43,6 +43,11 @@ Submissions rarely start life in your vault, so both Verify and Cohort read from
 
 **What counts as importable:** KNOBE seals and verifies *text*, so any text-based format is read directly with no conversion — Markdown (Notion, Obsidian, general), LaTeX source (`.tex`, Overleaf), HTML exports, plain text, CSV, and other lightweight-markup formats. **Binary documents (`.docx`, `.pdf`, `.pptx`, …) are not text** and must be converted to Markdown/text first (Pandoc, LibreOffice, and similar) — KNOBE is a text-integrity tool, not a document converter, so it deliberately ships no importer for binaries. When you add a folder or ZIP, binary files are skipped with a "convert first" note rather than silently ignored.
 
+### Privacy: no network, and files outside the vault only when you pick them
+
+- **No network use.** Sealing, verification, and every other feature run locally. The plugin makes no network requests, has no telemetry, and needs no account.
+- **Files outside your vault.** "Add files from disk…", "Add a folder from disk…" (Cohort), and "Verify a file from disk…" (Verify) open your operating system's file or folder picker so you can check exports that aren't in the vault yet. The plugin reads only the files you choose, in memory, and never writes outside the vault; anything you seal or export is saved inside your vault.
+
 ### ZIP hardening
 
 The ZIP reader is dependency-free and hardened against hostile archives:
@@ -52,13 +57,13 @@ The ZIP reader is dependency-free and hardened against hostile archives:
 - Encrypted entries, exotic compression methods, and ZIP64 archives are skipped/rejected with a stated reason; images, `__MACOSX/`, and other junk are ignored.
 - Anything skipped is reported, never silently dropped.
 
-## Teaching Studio (a separate guide plugin)
+## Teaching Studio (the built-in guide)
 
-The teaching dashboard ships as its **own plugin**, `knobe-teaching-studio`, in the [`instructor-plugin/`](instructor-plugin/) folder — built from this same repo. It teaches you the app: a role-based guide (Instructor · Student · TA/grader · Accessibility) mirroring knobe.org/teaching, where each path lists "who does what, when" and opens the matching KNOBE Studio tool with one click. It has its own ribbon icon (graduation cap) and command **Open Teaching Studio dashboard**.
+KNOBE Studio includes a second dashboard, the **Teaching Studio**, that teaches you the app: a role-based guide (Instructor · Student · TA/grader · Accessibility) mirroring knobe.org/teaching, where each path lists "who does what, when" and opens the matching Studio tool with one click. Once it's on, open it from the ribbon (graduation cap) or the command **Open Teaching Studio dashboard**.
 
-**It requires the KNOBE Studio plugin.** The Teaching Studio holds no tools of its own — it reaches Studio through a small public API (`knobeApi`) for deep-links, shared demo state, and the save folder, so there is exactly one source of truth and no duplicated tools. If KNOBE Studio isn't enabled, the dashboard shows a "requires KNOBE Studio" message instead of failing.
+It starts **off**. Turn it on with the **Turn on and open Teaching Studio** button on the Studio dashboard or the **Teaching Studio dashboard** setting; turning it off again removes its ribbon button and command and closes its tab. The Teaching Studio holds no tools of its own; every path opens the one Studio dashboard, so there's a single source of truth.
 
-It is a separate install. KNOBE Studio does not bundle, install, enable, or update it: download `knobe-teaching-studio.zip` from the [latest release](https://github.com/KnobeDev/obsidian-knobe-studio/releases/latest) and unzip it next to `knobe-studio/` in your plugins folder (see [Installing](#installing)). Studio 0.3.3 and earlier unpacked and enabled it on first load. A copy installed that way stays where it is, but Studio no longer updates it, so replace it from the release zip when you update.
+**Upgrading from 0.3.x:** earlier versions came with the Teaching Studio as a separate plugin, *KNOBE Teaching Studio*: Studio 0.3.3 and earlier installed it for you, and 0.3.4 offered it as a separate download. It's built in now, so turn that plugin off and uninstall it in **Settings → Community plugins** (Studio shows a one-time reminder). If a blank tab is left over from the old dashboard, close it. Studio never installs, enables, or updates another plugin.
 
 It also carries a **teaching kit**: one click seals a ready-to-use four-step example journey (prompt → reading → draft → revision, with per-step AI policies) into your output folder, so you can start from a working sequence instead of a blank Journey maker.
 
@@ -84,12 +89,7 @@ The test suite runs the engine over all 33 vectors in knobe-protocol's `test-vec
 
 ## Installing
 
-KNOBE Studio and KNOBE Teaching Studio are **two separate plugins**. Install KNOBE Studio for the workbench, and add Teaching Studio if you want the guide. Studio never installs, enables, or updates Teaching Studio. In **Settings → Community plugins** they appear as:
-
-| Toggle | What it turns on | Needs |
-|--------|------------------|-------|
-| **KNOBE Studio (KnobeDev)** | the six-tab workbench | nothing else |
-| **KNOBE Teaching Studio (KnobeDev)** | the guide dashboard | KNOBE Studio enabled |
+**You install one plugin: KNOBE Studio (KnobeDev).** The Teaching Studio guide is part of it; it starts off, and you turn it on from the Studio dashboard or Studio's settings.
 
 Two easy ways in. Pick whichever fits how you work:
 
@@ -102,30 +102,29 @@ Two easy ways in. Pick whichever fits how you work:
    ```
 3. In **Settings → Community plugins**, toggle on **KNOBE Studio (KnobeDev)**.
 
-BRAT keeps KNOBE Studio updated. It installs one plugin per repository, so it does not add Teaching Studio: install that from its release zip (see [Manual install](#manual-install-no-tools-at-all)) and update it the same way.
+BRAT keeps KNOBE Studio updated. Done.
 
 ### Easy way 2 — Ask your AI desktop
 
 If you use an agentic AI assistant with access to your machine — **Claude Desktop, Claude Code, Antigravity, Codex**, or similar — paste this and swap in your vault path:
 
-> Download `knobe-studio.zip` from the latest release at https://github.com/KnobeDev/obsidian-knobe-studio/releases, plus `knobe-teaching-studio.zip` if I want the teaching guide, and unzip each into `<PATH-TO-YOUR-VAULT>/.obsidian/plugins/` (creating `knobe-studio/` and `knobe-teaching-studio/`, each with `manifest.json`, `main.js`, `styles.css` inside). Then restart Obsidian and tell me how to enable them.
+> Download `knobe-studio.zip` from the latest release at https://github.com/KnobeDev/obsidian-knobe-studio/releases and unzip it into `<PATH-TO-YOUR-VAULT>/.obsidian/plugins/` (creating the folder `knobe-studio/` with `manifest.json`, `main.js`, `styles.css` inside). Then restart Obsidian and tell me how to enable it.
 
-That's the entire job — one or two zips, no build tools, no Node. When Obsidian reopens, toggle on **KNOBE Studio (KnobeDev)** in **Settings → Community plugins**, then **KNOBE Teaching Studio (KnobeDev)** if you added it. (The AI can often do this too by adding `"knobe-studio"` and `"knobe-teaching-studio"` to `.obsidian/community-plugins.json` while Obsidian is closed.)
+That's the entire job — one zip, no build tools, no Node. When Obsidian reopens, toggle on **KNOBE Studio (KnobeDev)** in **Settings → Community plugins** (the AI can often do this too by adding `"knobe-studio"` to `.obsidian/community-plugins.json` while Obsidian is closed). For the Teaching Studio guide, choose **Turn on and open Teaching Studio** on the Studio dashboard.
 
 ### Manual install (no tools at all)
 
 The same thing your AI would do, by hand:
 
-1. On the **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page, download **`knobe-studio.zip`** from the latest release's Assets, and **`knobe-teaching-studio.zip`** if you want the teaching guide.
+1. On the **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page, download **`knobe-studio.zip`** from the latest release's Assets. It's the only file you need.
 2. Find your vault's plugins folder: in Obsidian, **Settings → Community plugins → Installed plugins → the folder icon** opens `<vault>/.obsidian/plugins/`. (`.obsidian` is hidden; enable "show hidden files" if you navigate there yourself.)
 3. Unzip *into* that folder, so you end up with:
    ```
    <vault>/.obsidian/plugins/
-     ├─ knobe-studio/            (manifest.json, main.js, styles.css)
-     └─ knobe-teaching-studio/   (optional; the same three files)
+     └─ knobe-studio/            (manifest.json, main.js, styles.css)
    ```
-4. Back in **Settings → Community plugins**: turn off "Restricted mode" if it's on, click the **reload/refresh** icon (or restart Obsidian), and toggle **KNOBE Studio (KnobeDev)** on, then **KNOBE Teaching Studio (KnobeDev)** if you added it.
-5. Look for the ribbon icons in the left gutter: a **stamp** (Studio) and, with Teaching Studio, a **graduation cap**.
+4. Back in **Settings → Community plugins**: turn off "Restricted mode" if it's on, click the **reload/refresh** icon (or restart Obsidian), and toggle **KNOBE Studio (KnobeDev)** on.
+5. Look for the ribbon icons in the left gutter: a **stamp** (Studio) and, once you turn the Teaching Studio on, a **graduation cap**.
 
 ### Build from source (developers)
 
@@ -135,14 +134,13 @@ cd obsidian-knobe-studio
 npm install && npm run build
 ```
 
-This produces `main.js` (Studio) and `instructor-plugin/main.js` (Teaching Studio). Copy `manifest.json` + `main.js` + `styles.css` into `<vault>/.obsidian/plugins/knobe-studio/`, and the same three files from `instructor-plugin/` into `<vault>/.obsidian/plugins/knobe-teaching-studio/`, or symlink the folders for live development:
+This produces `main.js`. Copy `manifest.json` + `main.js` + `styles.css` into `<vault>/.obsidian/plugins/knobe-studio/`, or symlink the folder for live development:
 
 ```bash
 ln -s "$(pwd)" "<vault>/.obsidian/plugins/knobe-studio"
-ln -s "$(pwd)/instructor-plugin" "<vault>/.obsidian/plugins/knobe-teaching-studio"
 ```
 
-Then enable both in Community plugins.
+Then enable it in Community plugins.
 
 ## Themes
 
@@ -160,17 +158,17 @@ By default the Studio follows Obsidian's theme; the **Appearance** setting can p
 - **Default author** — prefills Create and Adapt
 - **Default license** — prefills when a template doesn't set one
 - **Open sealed files** — open each sealed file after saving
+- **Demo folder** and **Demo / presentation mode** — see [Demo / presentation mode](#demo--presentation-mode)
+- **Teaching Studio dashboard** — turn the built-in guide on or off (off until you turn it on)
 
 ## Development
 
 ```bash
-npm run dev     # watch build (both plugins)
+npm run dev     # watch build
 npm test        # vitest: engine vectors + studio-core + demo-scope logic
-npm run build   # type-check + production build of both plugins
+npm run build   # production build + type-check
 ```
-
-The build produces two plugins from one repo: `main.js` (KNOBE Studio, from `src/main.ts`) and `instructor-plugin/main.js` (KNOBE Teaching Studio, from `src/instructor-main.ts`), with `instructor-plugin/styles.css` kept in sync automatically.
 
 ## License
 
-Plugin code: MIT. Vendored `src/engine/knobe-core.js`: Apache-2.0, © the KNOBE Protocol project. Test vectors: CC0-1.0 (David Kyle, UC Davis). See [knobe.org](https://knobe.org) for the protocol specification and threat model.
+Plugin code: MIT. Vendored `src/engine/knobe-core.js`: Apache-2.0, © the KNOBE Protocol project; the license text is in [`src/engine/LICENSE`](src/engine/LICENSE). Test vectors: CC0-1.0 (David Kyle, UC Davis). See [knobe.org](https://knobe.org) for the protocol specification and threat model.

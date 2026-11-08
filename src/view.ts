@@ -16,7 +16,7 @@ import { TransformPanel } from "./panels/transform";
 import { JourneyPanel } from "./panels/journey";
 import { CohortPanel } from "./panels/cohort";
 import { AdaptPanel } from "./panels/adapt";
-import { announce } from "./ui";
+import { announce, button } from "./ui";
 
 export const KNOBE_STUDIO_VIEW = "knobe-studio-view";
 
@@ -55,6 +55,23 @@ export class KnobeStudioView extends ItemView {
   }
 
   private demoBanner: HTMLElement | null = null;
+  private teachingButton: HTMLButtonElement | null = null;
+
+  /** The Teaching Studio button turns the guide on when it is off, and opens it when it is on. */
+  refreshTeachingButton(): void {
+    this.teachingButton?.setText(
+      this.plugin.settings.teachingStudio ? "Open Teaching Studio dashboard" : "Turn on and open Teaching Studio"
+    );
+  }
+
+  private async onTeachingButton(): Promise<void> {
+    const wasOff = !this.plugin.settings.teachingStudio;
+    if (wasOff) await this.plugin.setTeachingStudio(true);
+    await this.plugin.activateTeachingView();
+    // The setting changed too (ribbon button and command added); say so once
+    // focus has moved, so the message isn't cut off.
+    if (wasOff) announce("Teaching Studio turned on and opened. Its ribbon button and command are now available.");
+  }
 
   /** Apply the appearance setting: follow Obsidian, or pin light/dark. */
   applyAppearance(): void {
@@ -88,6 +105,9 @@ export class KnobeStudioView extends ItemView {
       cls: "ks-help",
       text: "Create, verify, and transform knowledge objects that keep their context when they move. Everything runs locally in your vault: no upload, no server, no account.",
     });
+    // The Teaching Studio is a guide built into Studio that stays off until turned on.
+    this.teachingButton = button(header.createDiv({ cls: "ks-rowbtns" }), "", () => this.onTeachingButton());
+    this.refreshTeachingButton();
 
     this.demoBanner = container.createDiv({ cls: "ks-demo-banner ks-hidden", attr: { role: "status" } });
     this.refreshDemoBanner();
@@ -180,7 +200,6 @@ export class KnobeStudioView extends ItemView {
   private buildContext(): StudioContext {
     const app = this.app;
     const plugin = this.plugin;
-    const view = this;
     return {
       app,
       settings: plugin.settings,
@@ -221,14 +240,14 @@ export class KnobeStudioView extends ItemView {
       pickFolder(onPick: (folder: TFolder) => void): void {
         new FolderSuggestModal(app, onPick, plugin.demoScope()).open();
       },
-      selectTab(id: TabId): void {
-        view.selectTab(id);
+      selectTab: (id: TabId): void => {
+        this.selectTab(id);
       },
-      openCreateWithJourney(args: JourneyPrime): void {
-        view.createPanel.primeWithJourney(args);
+      openCreateWithJourney: (args: JourneyPrime): void => {
+        this.createPanel.primeWithJourney(args);
         // The primed banner (a status region) already says where the user
         // landed; a second tab announcement would talk over it.
-        view.selectTab("create", { announce: false });
+        this.selectTab("create", { announce: false });
       },
     };
   }

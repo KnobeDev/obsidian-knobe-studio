@@ -9,7 +9,7 @@ import { readZipTextEntries, type ZipReadResult } from "./zip";
 import { shown } from "./display";
 
 export function pickZipFile(onResult: (result: ZipReadResult, zipName: string) => void, onError: (message: string) => void): void {
-  const input = document.createElement("input");
+  const input = createEl("input");
   input.type = "file";
   input.accept = ".zip,application/zip,application/x-zip-compressed";
   input.addEventListener("change", () => {
