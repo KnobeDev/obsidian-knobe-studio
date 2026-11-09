@@ -3,9 +3,10 @@
  * that prefill the Create and Adapt forms.
  */
 import { App, PluginSettingTab, Setting } from "obsidian";
-import { companionManifest, reinstallCompanion } from "./companion-install";
 import type KnobeStudioPlugin from "./main";
 
+/** Where Teaching Studio's own release zip is published. */
+export const TEACHING_STUDIO_RELEASES_URL = "https://github.com/KnobeDev/obsidian-knobe-studio/releases/latest";
 
 export type StudioAppearance = "follow" | "light" | "dark";
 
@@ -19,8 +20,6 @@ export interface StudioSettings {
   demoFolder: string;
   /** When true, pickers, saves, and active-note reads are limited to demoFolder. */
   demoMode: boolean;
-  /** Companion (Teaching Studio) version this plugin last wrote into the vault; "" = never. */
-  companionInstalledVersion: string;
 }
 
 export const DEFAULT_SETTINGS: StudioSettings = {
@@ -31,7 +30,6 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   appearance: "follow",
   demoFolder: "KNOBE/Demo",
   demoMode: false,
-  companionInstalledVersion: "",
 };
 
 export class StudioSettingTab extends PluginSettingTab {
@@ -109,7 +107,7 @@ export class StudioSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Demo folder (sandbox)")
-      .setDesc("When demo mode is on, every file picker, save, and active-note read is confined to this folder — so real student records (FERPA) or health information (HIPAA) elsewhere in the vault are never surfaced while screen-sharing.")
+      .setDesc("When demo mode is on, every file picker, save, and active-note read is confined to this folder, so notes elsewhere in the vault, such as real student records, stay off screen while you present.")
       .addText((t) =>
         t
           .setPlaceholder("KNOBE/Demo")
@@ -122,26 +120,29 @@ export class StudioSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Demo / presentation mode")
-      .setDesc("Safe to screen-share to students: confines all file access to the demo folder. Also toggleable from the Teaching Studio dashboard.")
+      .setDesc("Keeps real student data off screen while you present: confines all file access to the demo folder. Also toggleable from the Teaching Studio dashboard.")
       .addToggle((t) =>
         t.setValue(this.plugin.settings.demoMode).onChange(async (v) => {
           await this.plugin.setDemoMode(v);
         })
       );
 
-    new Setting(containerEl).setName("Companion plugin").setHeading();
+    new Setting(containerEl).setName("Teaching Studio").setHeading();
 
-    new Setting(containerEl)
-      .setName("KNOBE Teaching Studio")
-      .setDesc(
-        "The teaching dashboard ships inside KNOBE Studio (v" +
-          companionManifest().version +
-          ") and installs itself as its own plugin, enabled by default — toggle it off in Community plugins like any other. If you've removed it, this puts it back."
-      )
-      .addButton((b) =>
-        b.setButtonText("Reinstall").onClick(async () => {
-          await reinstallCompanion(this.plugin);
-        })
-      );
+    new Setting(containerEl).setName("Separate install").setDesc(teachingStudioDescription());
   }
+}
+
+/**
+ * Teaching Studio is a separate install: Studio never writes, enables, or
+ * updates another plugin. This only says where to get it.
+ */
+function teachingStudioDescription(): DocumentFragment {
+  return createFragment((f) => {
+    f.appendText(
+      "KNOBE Teaching Studio (KnobeDev) is a separate plugin with a role-by-role guide to these tools, a teaching kit, and a demo sandbox setup. Studio does not install or update it. To add or update it, download knobe-teaching-studio.zip from the "
+    );
+    f.createEl("a", { text: "latest release on GitHub (opens in your browser)", href: TEACHING_STUDIO_RELEASES_URL });
+    f.appendText(" and unzip it into your vault's plugins folder, replacing any copy an earlier Studio installed.");
+  });
 }

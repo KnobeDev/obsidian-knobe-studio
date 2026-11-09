@@ -5,7 +5,6 @@
  */
 import { Menu, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { KNOBE_STUDIO_VIEW, KnobeStudioView } from "./view";
-import { ensureCompanionInstalled } from "./companion-install";
 import { DEFAULT_SETTINGS, StudioSettingTab, type StudioSettings } from "./settings";
 import { KNOBE_NAME_RE, isUnderFolder } from "./vault";
 import type { TabId } from "./panel-context";
@@ -19,10 +18,6 @@ export default class KnobeStudioPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
     this.knobeApi = this.buildApi();
-
-    // After startup settles, unpack the bundled Teaching Studio plugin so
-    // it appears in Settings → Community plugins without a second download.
-    this.app.workspace.onLayoutReady(() => void ensureCompanionInstalled(this));
 
     this.registerView(KNOBE_STUDIO_VIEW, (leaf: WorkspaceLeaf) => new KnobeStudioView(leaf, this));
     this.addRibbonIcon("stamp", "Open KNOBE Studio", () => void this.activateView());

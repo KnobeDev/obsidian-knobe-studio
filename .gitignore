@@ -4,7 +4,6 @@ main.js.map
 instructor-plugin/main.js
 instructor-plugin/main.js.map
 instructor-plugin/styles.css
-src/companion-payload.ts
 *.log
 data.json
 .DS_Store
