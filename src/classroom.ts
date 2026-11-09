@@ -171,17 +171,17 @@ export class KnobeClassroomView extends ItemView {
   private renderMissingStudio(c: HTMLElement): void {
     const box = c.createDiv({ cls: "ks-banner" });
     box.createEl("p", {
-      text: "KNOBE Teaching Studio needs the KNOBE Studio plugin, which provides the tools this dashboard opens.",
+      text: "KNOBE Teaching Studio needs KNOBE Studio (KnobeDev), which provides the tools this dashboard opens.",
     });
     box.createEl("p", {
-      text: "Enable KNOBE Studio in Settings → Community plugins, then reopen this dashboard.",
+      text: "Enable KNOBE Studio (KnobeDev) in Settings → Community plugins, then reopen this dashboard.",
     });
   }
 
   private renderDemoControls(c: HTMLElement): void {
     const demoCard = c.createDiv({ cls: "ks-demo-card" });
     demoCard.createEl("h3", { cls: "ks-subhead", text: "Presenting to students" });
-    helpText(demoCard, "Turn on demo mode before you screen-share. It confines every file picker, save, and \"use active note\" to the demo folder, so real student records (FERPA) and any health information (HIPAA) elsewhere in your vault can never appear on the projector. It does not delete or move anything — it just narrows what the dashboards can see while it's on.");
+    helpText(demoCard, "Turn on demo mode before you screen-share. It confines every file picker, save, and \"use active note\" to the demo folder, so real student records and other notes elsewhere in your vault stay off the projector. It does not delete or move anything — it just narrows what the dashboards can see while it's on.");
     const demoRow = demoCard.createDiv({ cls: "ks-rowbtns" });
     this.demoToggle = checkField(demoRow, "Demo / presentation mode (safe to screen-share)", this.resolveApi()?.isDemoMode() ?? false, (v) => {
       const api = this.resolveApi();

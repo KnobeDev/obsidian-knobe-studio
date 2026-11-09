@@ -1,6 +1,8 @@
-# KNOBE Studio for Obsidian
+# KNOBE Studio (KnobeDev)
 
-The [KNOBE Studio](https://knobe.org/studio/) workbench, rebuilt as an Obsidian dashboard. Create, verify, and transform sealed KNOBE Protocol v1 knowledge objects without leaving your vault — no upload, no server, no account.
+An Obsidian dashboard modeled on the steward's browser workbench, [KNOBE Studio](https://knobe.org/studio/). Create, verify, and transform sealed KNOBE Protocol v1 knowledge objects without leaving your vault — no upload, no server, no account.
+
+KnobeDev (Joshua Hori) maintains this plugin. It is not the steward's knobe.org/studio and not an official KNOBE Protocol project. Every verdict and seal comes from the protocol's own `knobe-core.js`, called unmodified (see [Engine](#engine)).
 
 A KNOBE is a single markdown file with three layers: YAML frontmatter you can scan, a markdown body you can read anywhere, and a Base64 JSON payload that records attribution, transformation history, fidelity limits, use conditions, and a SHA-256 integrity hash. This plugin brings the full Studio to your vault.
 
@@ -13,7 +15,7 @@ Open it from the ribbon (stamp icon) or the command palette: **KNOBE Studio: Ope
 | **Create** | Seal new content into a `.knobe.md` knowledge object. Start blank, from a template (instructor reading, student reflection, research transcript, enterprise summary), or from the active note. A Markdown toolbar (headings, bold/italic, lists, links, quotes, code) formats the body without memorizing syntax. Live preview shows the exact file the Seal button produces. |
 | **Verify** | Check whether a sealed record is intact: integrity state, body verification, and spec conformance, with the full report rendered in-panel. |
 | **Transform** | Derive a new object from a verified original. The derivative declares its parent by payload hash, and the sealed `use_conditions` are evaluated (`permits("transform")`) before you start. |
-| **Journey** | Instructors design assignment sequences: each step records who seals it, the kind of work, its AI policy, and what it builds on. Steps sealed through Create flow their hashes back into the journey. A **journey map** draws the sequence (who seals each step, its AI policy, what it builds on, which steps are hash-anchored) and marks "You are here" while you work a step. Students load a journey to start a step with context, fidelity limits, and FERPA-aware use conditions pre-filled. |
+| **Journey** | Instructors design assignment sequences: each step records who seals it, the kind of work, its AI policy, and what it builds on. Steps sealed through Create flow their hashes back into the journey. A **journey map** draws the sequence (who seals each step, its AI policy, what it builds on, which steps are hash-anchored) and marks "You are here" while you work a step. Students load a journey to start a step with context, fidelity limits, and use conditions pre-filled, including an internal privacy level and a consent note. |
 | **Cohort check** | Batch-verify a vault folder of submissions. Anomalies sort to the top: broken seals and files with no chain link to the loaded journey/assignment. View the lineage between submissions and export CSV. **Seal a cohort receipt**: one sealed file attesting which files (by payload hash) produced which verdicts at seal time; student names are left out, and anchoring its single hash anywhere with an independent timestamp timestamps every listed submission. |
 | **Adapt** | Create accessibility adaptations — plain language, translation, transcript/captions, alt-text, multimodal — sealed with lineage (`adaptation_of` + `accessibility` record) bound to the source by hash. |
 
@@ -50,19 +52,19 @@ The ZIP reader is dependency-free and hardened against hostile archives:
 - Encrypted entries, exotic compression methods, and ZIP64 archives are skipped/rejected with a stated reason; images, `__MACOSX/`, and other junk are ignored.
 - Anything skipped is reported, never silently dropped.
 
-## Teaching Studio (the bundled guide plugin)
+## Teaching Studio (a separate guide plugin)
 
 The teaching dashboard ships as its **own plugin**, `knobe-teaching-studio`, in the [`instructor-plugin/`](instructor-plugin/) folder — built from this same repo. It teaches you the app: a role-based guide (Instructor · Student · TA/grader · Accessibility) mirroring knobe.org/teaching, where each path lists "who does what, when" and opens the matching KNOBE Studio tool with one click. It has its own ribbon icon (graduation cap) and command **Open Teaching Studio dashboard**.
 
 **It requires the KNOBE Studio plugin.** The Teaching Studio holds no tools of its own — it reaches Studio through a small public API (`knobeApi`) for deep-links, shared demo state, and the save folder, so there is exactly one source of truth and no duplicated tools. If KNOBE Studio isn't enabled, the dashboard shows a "requires KNOBE Studio" message instead of failing.
 
-There's nothing extra to install or turn on: KNOBE Studio bundles it, unpacks it into `<vault>/.obsidian/plugins/knobe-teaching-studio/` on first load, and enables it — it's the tool that teaches the rest. Once you know the workflow, toggle **KNOBE Teaching Studio** off in Community plugins (or remove it) and it stays off.
+It is a separate install. KNOBE Studio does not bundle, install, enable, or update it: download `knobe-teaching-studio.zip` from the [latest release](https://github.com/KnobeDev/obsidian-knobe-studio/releases/latest) and unzip it next to `knobe-studio/` in your plugins folder (see [Installing](#installing)). Studio 0.3.3 and earlier unpacked and enabled it on first load. A copy installed that way stays where it is, but Studio no longer updates it, so replace it from the release zip when you update.
 
 It also carries a **teaching kit**: one click seals a ready-to-use four-step example journey (prompt → reading → draft → revision, with per-step AI policies) into your output folder, so you can start from a working sequence instead of a blank Journey maker.
 
-### Demo / presentation mode (FERPA / HIPAA-safe)
+### Demo / presentation mode
 
-When you screen-share the dashboards to students, you don't want the file pickers listing real submissions or any other sensitive vault content. **Demo mode** (toggle in the Teaching Studio's "Presenting to students" card, in settings, or via the *Toggle demo / presentation mode* command) confines **every** vault touchpoint to a single sandbox folder (`demoFolder`, default `KNOBE/Demo`):
+Demo mode keeps real student data off screen while you present. When you screen-share the dashboards to students, you don't want the file pickers listing real submissions or any other sensitive vault content. **Demo mode** (toggle in the Teaching Studio's "Presenting to students" card, in settings, or via the *Toggle demo / presentation mode* command) confines **every** vault touchpoint to a single sandbox folder (`demoFolder`, default `KNOBE/Demo`):
 
 - File and folder pickers only list items inside the sandbox.
 - Saves (sealed files, cohort CSV, example journey) go to the sandbox.
@@ -76,18 +78,18 @@ Demo mode narrows what the dashboards can *see*; it never deletes or moves anyth
 
 ## Engine
 
-Verification and sealing run on `knobe-core.js`, the official KNOBE Protocol v1 JavaScript engine from [knobe.org](https://knobe.org), vendored verbatim (Apache-2.0). The test suite confirms it reproduces all nine official test-vector verdicts, plus round-trip create → verify → transform → adapt chains. A verified result confirms integrity, not truth.
+Verification and sealing run on `knobe-core.js`, the official KNOBE Protocol v1 JavaScript engine from [knobe.org](https://knobe.org), vendored verbatim (Apache-2.0) from [knobe-protocol](https://github.com/KnobeOne/knobe-protocol) at `8d664d3`. That copy includes the sealer's refusal of code points its Unicode tables leave unassigned ([knobe-protocol#34](https://github.com/KnobeOne/knobe-protocol/pull/34)). The plugin adds no verification logic of its own.
+
+The test suite runs the engine over all 33 vectors in knobe-protocol's `test-vectors/` at `8d664d3` (9 core, 17 adversarial, 7 interpretation) and checks `status`, `body_verified` and `conformance` against the published README tables, plus round-trip create → verify → transform → adapt chains. CI compares the vendored engine and every bundled vector with knobe-protocol's current `main`, and fails if any byte differs. A verified result confirms integrity, not truth.
 
 ## Installing
 
-**You only ever install one thing: KNOBE Studio.** The Teaching Studio (the guide that teaches you the app) is bundled inside it and installs itself as a second plugin, **enabled by default** so the guide is there on first launch. Both live in **Settings → Community plugins** behind normal toggles:
+KNOBE Studio and KNOBE Teaching Studio are **two separate plugins**. Install KNOBE Studio for the workbench, and add Teaching Studio if you want the guide. Studio never installs, enables, or updates Teaching Studio. In **Settings → Community plugins** they appear as:
 
-| Toggle | What it turns on | Default |
-|--------|------------------|---------|
-| **KNOBE Studio** | the six-tab workbench | you enable it once |
-| **KNOBE Teaching Studio** | the guide dashboard (needs KNOBE Studio on) | on — toggle off when you know the ropes |
-
-Turning the Teaching Studio off or removing it sticks — Studio won't re-add or re-enable it. The **Reinstall** button in Studio's settings brings it back.
+| Toggle | What it turns on | Needs |
+|--------|------------------|-------|
+| **KNOBE Studio (KnobeDev)** | the six-tab workbench | nothing else |
+| **KNOBE Teaching Studio (KnobeDev)** | the guide dashboard | KNOBE Studio enabled |
 
 Two easy ways in. Pick whichever fits how you work:
 
@@ -98,31 +100,32 @@ Two easy ways in. Pick whichever fits how you work:
    ```
    https://github.com/KnobeDev/obsidian-knobe-studio
    ```
-3. In **Settings → Community plugins**, toggle on **KNOBE Studio**. It brings the **KNOBE Teaching Studio** along, already enabled.
+3. In **Settings → Community plugins**, toggle on **KNOBE Studio (KnobeDev)**.
 
-BRAT keeps KNOBE Studio updated, and each update carries the matching Teaching Studio with it. Done.
+BRAT keeps KNOBE Studio updated. It installs one plugin per repository, so it does not add Teaching Studio: install that from its release zip (see [Manual install](#manual-install-no-tools-at-all)) and update it the same way.
 
 ### Easy way 2 — Ask your AI desktop
 
 If you use an agentic AI assistant with access to your machine — **Claude Desktop, Claude Code, Antigravity, Codex**, or similar — paste this and swap in your vault path:
 
-> Download `knobe-studio.zip` from the latest release at https://github.com/KnobeDev/obsidian-knobe-studio/releases and unzip it into `<PATH-TO-YOUR-VAULT>/.obsidian/plugins/` (creating the folder `knobe-studio/` with `manifest.json`, `main.js`, `styles.css` inside). Then restart Obsidian and tell me how to enable it.
+> Download `knobe-studio.zip` from the latest release at https://github.com/KnobeDev/obsidian-knobe-studio/releases, plus `knobe-teaching-studio.zip` if I want the teaching guide, and unzip each into `<PATH-TO-YOUR-VAULT>/.obsidian/plugins/` (creating `knobe-studio/` and `knobe-teaching-studio/`, each with `manifest.json`, `main.js`, `styles.css` inside). Then restart Obsidian and tell me how to enable them.
 
-That's the entire job — one zip, no build tools, no Node. When Obsidian reopens, toggle on **KNOBE Studio** in **Settings → Community plugins** (the AI can often do this too by adding `"knobe-studio"` to `.obsidian/community-plugins.json` while Obsidian is closed). On first load, Studio installs and enables **KNOBE Teaching Studio** next to itself — the graduation-cap ribbon icon walks you through the workflow, and you can toggle it off there once you don't need it.
+That's the entire job — one or two zips, no build tools, no Node. When Obsidian reopens, toggle on **KNOBE Studio (KnobeDev)** in **Settings → Community plugins**, then **KNOBE Teaching Studio (KnobeDev)** if you added it. (The AI can often do this too by adding `"knobe-studio"` and `"knobe-teaching-studio"` to `.obsidian/community-plugins.json` while Obsidian is closed.)
 
 ### Manual install (no tools at all)
 
 The same thing your AI would do, by hand:
 
-1. On the **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page, download **`knobe-studio.zip`** from the latest release's Assets. It's the only file you need. (`knobe-teaching-studio.zip` is still published for anyone placing that plugin by hand.)
+1. On the **[Releases](https://github.com/KnobeDev/obsidian-knobe-studio/releases)** page, download **`knobe-studio.zip`** from the latest release's Assets, and **`knobe-teaching-studio.zip`** if you want the teaching guide.
 2. Find your vault's plugins folder: in Obsidian, **Settings → Community plugins → Installed plugins → the folder icon** opens `<vault>/.obsidian/plugins/`. (`.obsidian` is hidden; enable "show hidden files" if you navigate there yourself.)
 3. Unzip *into* that folder, so you end up with:
    ```
    <vault>/.obsidian/plugins/
-     └─ knobe-studio/            (manifest.json, main.js, styles.css)
+     ├─ knobe-studio/            (manifest.json, main.js, styles.css)
+     └─ knobe-teaching-studio/   (optional; the same three files)
    ```
-4. Back in **Settings → Community plugins**: turn off "Restricted mode" if it's on, click the **reload/refresh** icon (or restart Obsidian), and toggle **KNOBE Studio** on. It installs and enables **KNOBE Teaching Studio** alongside itself (toggle it off there whenever you like).
-5. Look for the ribbon icons in the left gutter: a **stamp** (Studio) and a **graduation cap** (Teaching Studio).
+4. Back in **Settings → Community plugins**: turn off "Restricted mode" if it's on, click the **reload/refresh** icon (or restart Obsidian), and toggle **KNOBE Studio (KnobeDev)** on, then **KNOBE Teaching Studio (KnobeDev)** if you added it.
+5. Look for the ribbon icons in the left gutter: a **stamp** (Studio) and, with Teaching Studio, a **graduation cap**.
 
 ### Build from source (developers)
 
@@ -132,7 +135,7 @@ cd obsidian-knobe-studio
 npm install && npm run build
 ```
 
-This produces `main.js` (Studio, with the built Teaching Studio embedded) and `instructor-plugin/main.js` (Teaching Studio standalone). Copy `manifest.json` + `main.js` + `styles.css` into `<vault>/.obsidian/plugins/knobe-studio/` — the Teaching Studio installs itself from there — or symlink the folders for live development:
+This produces `main.js` (Studio) and `instructor-plugin/main.js` (Teaching Studio). Copy `manifest.json` + `main.js` + `styles.css` into `<vault>/.obsidian/plugins/knobe-studio/`, and the same three files from `instructor-plugin/` into `<vault>/.obsidian/plugins/knobe-teaching-studio/`, or symlink the folders for live development:
 
 ```bash
 ln -s "$(pwd)" "<vault>/.obsidian/plugins/knobe-studio"
