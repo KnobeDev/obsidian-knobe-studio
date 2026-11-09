@@ -1,7 +1,7 @@
 {
   "id": "knobe-studio",
   "name": "KNOBE Studio (KnobeDev)",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "minAppVersion": "1.4.0",
   "description": "Create, verify, transform, and adapt sealed KNOBE Protocol v1 knowledge objects in your vault, design assignment journeys, and batch-check cohort submissions.",
   "author": "KnobeDev",
