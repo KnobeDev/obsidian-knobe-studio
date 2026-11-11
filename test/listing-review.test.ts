@@ -1,8 +1,9 @@
 /**
  * Commitments from the steward's listing review (knobe-protocol #16,
- * 2026-11-08): names and authorship that say whose these plugins are, Studio
+ * 2026-11-08): a name and authorship that say whose the plugin is, Studio
  * never installing or enabling another plugin, and documentation without
- * compliance claims or a stale vector count.
+ * compliance claims or a stale vector count. Since 0.4.0 the Teaching Studio
+ * is a view inside Studio (off until turned on), so there is one manifest.
  *
  * The manifest checks mirror the `validate-manifest` rule of Obsidian's own
  * linter, which directory review runs. Both 0.3.0 and 0.5.1 reject "obsidian"
@@ -17,7 +18,6 @@ const read = (path: string): string => readFileSync(join(ROOT, path), "utf-8");
 
 const MANIFESTS = [
   { path: "manifest.json", id: "knobe-studio", name: "KNOBE Studio (KnobeDev)" },
-  { path: "instructor-plugin/manifest.json", id: "knobe-teaching-studio", name: "KNOBE Teaching Studio (KnobeDev)" },
 ];
 
 describe.each(MANIFESTS)("$path", ({ path, id, name }) => {
@@ -68,7 +68,7 @@ describe("Studio installs no other plugin", () => {
 });
 
 describe("documentation states what the tools do", () => {
-  const userFacing = ["README.md", "instructor-plugin/README.md", "manifest.json", "instructor-plugin/manifest.json", ...sourceFiles];
+  const userFacing = ["README.md", "manifest.json", ...sourceFiles];
 
   test("makes no FERPA or HIPAA compliance claims", () => {
     const offenders = userFacing.filter((f) => /ferpa-aware|hipaa-safe|can never appear/i.test(read(f)));

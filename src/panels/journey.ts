@@ -9,7 +9,7 @@ import { shown } from "../display";
 import {
   JKINDS, JPOLICIES, JSEALERS,
   buildJourneyBody, buildJourneyFields, journeyContextForInstructorStep,
-  journeyContextForStep, journeyPayloadSteps, localToday, newJourneyStep, singleLine, slugify,
+  journeyContextForStep, journeyPayloadSteps, journeyStepsFromPayload, localToday, newJourneyStep, policyFor, singleLine, slugify,
   type JourneyMeta, type JourneyStep, type LoadedJourney,
 } from "../studio-core";
 import {
@@ -312,16 +312,7 @@ export class JourneyPanel {
     this.title.value = typeof j.title === "string" ? j.title : "";
     const src = report.payload?.attribution?.sources?.[0];
     this.instructor.value = src && typeof src.author === "string" ? src.author : "";
-    this.steps = j.steps.map((s) => ({
-      title: typeof s.title === "string" ? s.title : "",
-      sealer: JSEALERS[String(s.sealer)] ? String(s.sealer) : "student",
-      kind: JKINDS[String(s.kind)] ? String(s.kind) : "writing",
-      ai_policy: JPOLICIES[String(s.ai_policy)] ? String(s.ai_policy) : "not_applicable",
-      ai_detail: typeof s.ai_policy_detail === "string" ? s.ai_policy_detail : "",
-      expectations: typeof s.expectations === "string" ? s.expectations : "",
-      builds_on: Array.isArray(s.builds_on) ? s.builds_on.map((n) => Number(n) - 1).filter((n) => n >= 0) : [],
-      spec_hash: typeof s.spec_hash === "string" ? s.spec_hash : "",
-    }));
+    this.steps = journeyStepsFromPayload(j.steps);
     this.loadedFrom = {
       hash: typeof report.stored === "string" ? report.stored : "",
       title: typeof report.payload?.title === "string" ? report.payload.title : "Untitled journey",
@@ -365,7 +356,7 @@ export class JourneyPanel {
   private startStudentStep(journey: LoadedJourney, idx: number, journeyHash: string, journeyTitle: string): void {
     const step = journey.steps[idx];
     const course = typeof journey.course === "string" ? journey.course : "this course";
-    const policy = JPOLICIES[String(step.ai_policy)] ?? JPOLICIES.not_applicable;
+    const policy = policyFor(step.ai_policy);
     const journeyCtx = journeyContextForStep(journey, idx, journeyHash);
     const preservations = [
       "do not redistribute outside the course without the student's consent",

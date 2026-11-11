@@ -1,6 +1,6 @@
 {
   "name": "knobe-studio",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "KNOBE Studio workbench for Obsidian: create, verify, transform, journey, cohort check, and adapt sealed knowledge objects.",
   "main": "main.js",
   "author": "KnobeDev (https://github.com/KnobeDev)",
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.12",
     "obsidian": "^1.7.2",
     "typescript": "^5.6.3",

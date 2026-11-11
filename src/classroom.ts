@@ -1,15 +1,14 @@
 /**
- * classroom.ts — the KNOBE Teaching Studio dashboard (an ItemView). It
- * gathers the semester workflow (who does what, when) into one place and
- * routes one click into the actual tools, which live in the separate KNOBE
- * Studio plugin. It holds no tools of its own — a single Studio instance stays
- * the source of truth — reaching Studio only through the KnobeStudioApi
- * contract. It does bundle the engine so its teaching kit can seal an example
- * journey and demo submissions directly.
+ * classroom.ts — the KNOBE Teaching Studio dashboard (an ItemView inside
+ * KNOBE Studio). It gathers the semester workflow (who does what, when) into
+ * one place and routes one click into the Studio dashboard's tools. It holds
+ * no tools of its own — the Studio view stays the source of truth — and
+ * reaches Studio only through the KnobeStudioApi contract. Its teaching kit
+ * seals an example journey and demo submissions directly.
  *
- * The internal view-type id ("knobe-classroom-view") and class name are kept
- * stable across the "Classroom" → "Instructor Studio" → "Teaching Studio"
- * renames so open tabs and saved workspace state are not orphaned.
+ * Until 0.3.2 this view shipped as a separate plugin under the view type
+ * "knobe-classroom-view". The folded-in view uses its own type, so a vault
+ * that still has the old plugin enabled loads both without a clash.
  */
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import type { KnobeStudioApi } from "./api";
@@ -20,7 +19,7 @@ import { buildDemoSubmission, buildExampleJourney, exampleJourneyMeta } from "./
 import { saveSealedFile } from "./vault";
 import { announce, button, checkField, errorBox, helpText, hideError, sectionHeading, showError } from "./ui";
 
-export const KNOBE_CLASSROOM_VIEW = "knobe-classroom-view";
+export const KNOBE_TEACHING_VIEW = "knobe-teaching-view";
 
 interface RolePath {
   role: string;
@@ -76,19 +75,19 @@ const PATHS: RolePath[] = [
   },
 ];
 
-export class KnobeClassroomView extends ItemView {
-  private resolveApi: () => KnobeStudioApi | null;
+export class KnobeTeachingView extends ItemView {
+  private api: KnobeStudioApi;
   private err: HTMLElement | null = null;
   private demoBanner: HTMLElement | null = null;
   private demoToggle: HTMLInputElement | null = null;
 
-  constructor(leaf: WorkspaceLeaf, resolveApi: () => KnobeStudioApi | null) {
+  constructor(leaf: WorkspaceLeaf, api: KnobeStudioApi) {
     super(leaf);
-    this.resolveApi = resolveApi;
+    this.api = api;
   }
 
   getViewType(): string {
-    return KNOBE_CLASSROOM_VIEW;
+    return KNOBE_TEACHING_VIEW;
   }
 
   getDisplayText(): string {
@@ -101,7 +100,7 @@ export class KnobeClassroomView extends ItemView {
 
   /** Match the Studio's appearance setting (follow Obsidian, or pin light/dark). */
   applyAppearance(): void {
-    const mode = this.resolveApi()?.appearance() ?? "follow";
+    const mode = this.api.appearance();
     this.contentEl.toggleClass("ks-theme-light", mode === "light");
     this.contentEl.toggleClass("ks-theme-dark", mode === "dark");
   }
@@ -109,13 +108,12 @@ export class KnobeClassroomView extends ItemView {
   /** Reflect demo-mode state in the banner and toggle after any change. */
   refreshDemoBanner(): void {
     if (!this.demoBanner) return;
-    const api = this.resolveApi();
-    const on = api?.isDemoMode() ?? false;
+    const on = this.api.isDemoMode();
     this.demoBanner.toggleClass("ks-hidden", !on);
     this.demoBanner.setText(
-      on && api
+      on
         ? "Demo / presentation mode is ON — safe to screen-share. File pickers, saves, and active-note reads are confined to " +
-            api.effectiveOutputFolder() + "; real records elsewhere in the vault are never shown."
+            this.api.effectiveOutputFolder() + "; real records elsewhere in the vault are never shown."
         : ""
     );
     if (this.demoToggle) this.demoToggle.checked = on;
@@ -136,20 +134,8 @@ export class KnobeClassroomView extends ItemView {
       text: "Learn the KNOBE workflow in one place: who seals what, and when. Each path opens the matching tool in the Studio dashboard — the Teaching Studio guides; the Studio does the sealing.",
     });
 
-    // Re-theme / re-sync when this view becomes active again (e.g. after the
-    // teacher toggled demo mode from Studio's settings tab in another plugin).
-    this.registerEvent(this.app.workspace.on("active-leaf-change", () => {
-      if (this.app.workspace.getActiveViewOfType(KnobeClassroomView) === this) {
-        this.applyAppearance();
-        this.refreshDemoBanner();
-      }
-    }));
-
-    if (!this.resolveApi()) {
-      this.renderMissingStudio(c);
-      return;
-    }
-
+    // Demo-mode and appearance changes reach this view through the plugin's
+    // refreshDemoState() / refreshStudioAppearance(), as they do the Studio view.
     this.demoBanner = c.createDiv({ cls: "ks-demo-banner ks-hidden", attr: { role: "status" } });
     this.err = errorBox(c);
     this.renderDemoControls(c);
@@ -163,19 +149,9 @@ export class KnobeClassroomView extends ItemView {
     helpText(c, "Get started without building a journey from scratch. This seals a four-step example sequence (prompt → reading → draft → revision) into your output folder; open it on the Journey tab to adapt it, or hand it to students to try the student flow.");
     const kitRow = c.createDiv({ cls: "ks-rowbtns" });
     button(kitRow, "Seal an example journey into my vault", () => this.sealExampleJourney(), { cta: true });
-    button(kitRow, "Open the Studio dashboard", () => void this.resolveApi()?.openStudioAt("journey"));
+    button(kitRow, "Open the Studio dashboard", () => void this.api.openStudioAt("journey"));
 
     this.renderCompliance(c);
-  }
-
-  private renderMissingStudio(c: HTMLElement): void {
-    const box = c.createDiv({ cls: "ks-banner" });
-    box.createEl("p", {
-      text: "KNOBE Teaching Studio needs KNOBE Studio (KnobeDev), which provides the tools this dashboard opens.",
-    });
-    box.createEl("p", {
-      text: "Enable KNOBE Studio (KnobeDev) in Settings → Community plugins, then reopen this dashboard.",
-    });
   }
 
   private renderDemoControls(c: HTMLElement): void {
@@ -183,9 +159,8 @@ export class KnobeClassroomView extends ItemView {
     demoCard.createEl("h3", { cls: "ks-subhead", text: "Presenting to students" });
     helpText(demoCard, "Turn on demo mode before you screen-share. It confines every file picker, save, and \"use active note\" to the demo folder, so real student records and other notes elsewhere in your vault stay off the projector. It does not delete or move anything — it just narrows what the dashboards can see while it's on.");
     const demoRow = demoCard.createDiv({ cls: "ks-rowbtns" });
-    this.demoToggle = checkField(demoRow, "Demo / presentation mode (safe to screen-share)", this.resolveApi()?.isDemoMode() ?? false, (v) => {
-      const api = this.resolveApi();
-      if (api) void api.setDemoMode(v).then(() => this.refreshDemoBanner());
+    this.demoToggle = checkField(demoRow, "Demo / presentation mode (safe to screen-share)", this.api.isDemoMode(), (v) => {
+      void this.api.setDemoMode(v).then(() => this.refreshDemoBanner());
     });
     button(demoRow, "Set up demo sandbox", () => this.setUpDemoSandbox(), { cta: true });
     helpText(demoCard, "\"Set up demo sandbox\" seals a demo journey and two clearly-labeled sample submissions (Sample Student A, Sample Student B — no real names, no real work) into the demo folder, so you have a complete lifecycle to walk through: build → seal → cohort-check.");
@@ -208,12 +183,12 @@ export class KnobeClassroomView extends ItemView {
     const ol = card.createEl("ol", { cls: "ks-role-steps" });
     for (const step of path.steps) ol.createEl("li", { text: step });
     const row = card.createDiv({ cls: "ks-rowbtns" });
-    button(row, path.cta.label, () => void this.resolveApi()?.openStudioAt(path.cta.tab));
+    button(row, path.cta.label, () => void this.api.openStudioAt(path.cta.tab));
   }
 
   private async sealExampleJourney(): Promise<void> {
-    const api = this.resolveApi();
-    if (!api || !this.err) return;
+    const api = this.api;
+    if (!this.err) return;
     hideError(this.err);
     try {
       const { fields, body } = buildExampleJourney(api.defaultAuthor(), localToday());
@@ -223,7 +198,7 @@ export class KnobeClassroomView extends ItemView {
       const folder = courseFolder(api.effectiveOutputFolder(), meta.term, meta.course);
       const file = await saveSealedFile(this.app, folder, slugify(r.payload.title), r.text, api.demoScope());
       announce("Example journey sealed and saved to " + file.path + ".");
-      if (api.openAfterSeal()) this.app.workspace.getLeaf("tab").openFile(file);
+      if (api.openAfterSeal()) await this.app.workspace.getLeaf("tab").openFile(file);
     } catch (e) {
       showError(this.err, "Could not seal the example journey: " + (e instanceof Error ? e.message : String(e)));
     }
@@ -236,8 +211,8 @@ export class KnobeClassroomView extends ItemView {
    * teacher is immediately in the safe-to-present state.
    */
   private async setUpDemoSandbox(): Promise<void> {
-    const api = this.resolveApi();
-    if (!api || !this.err) return;
+    const api = this.api;
+    if (!this.err) return;
     hideError(this.err);
     try {
       const today = localToday();

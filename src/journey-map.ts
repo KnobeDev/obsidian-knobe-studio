@@ -7,7 +7,7 @@
  * self-excluded.
  */
 import { shown } from "./display";
-import { JPOLICIES, JSEALERS } from "./studio-core";
+import { JPOLICIES, JSEALERS, ownEntry } from "./studio-core";
 
 export interface JourneyMapNode {
   /** "Step N · Sealer" */
@@ -31,20 +31,23 @@ export function journeyMapModel(
   steps: ReadonlyArray<Record<string, unknown>> | null | undefined,
   currentIdx: number | null
 ): JourneyMapModel {
-  const list = Array.isArray(steps) ? steps : [];
+  const list: ReadonlyArray<unknown> = Array.isArray(steps) ? steps : [];
   const count = list.length;
   const description =
     "The journey as a sequence of " + count + " step" + (count === 1 ? "" : "s") +
     (currentIdx !== null ? "; the current step is marked" : "") + ".";
-  const nodes = list.map((s, i): JourneyMapNode => {
-    const sealer = String(s.sealer ?? "");
-    const policy = JPOLICIES[String(s.ai_policy)] ?? JPOLICIES.not_applicable;
+  const nodes = list.map((step, i): JourneyMapNode => {
+    // A hostile journey can hold any JSON value where a step belongs.
+    const s: Record<string, unknown> = step !== null && typeof step === "object" ? (step as Record<string, unknown>) : {};
+    const sealer = typeof s.sealer === "string" ? s.sealer : "";
+    const policyKey = typeof s.ai_policy === "string" ? s.ai_policy : "";
+    const policy = ownEntry(JPOLICIES, policyKey) ?? JPOLICIES.not_applicable;
     const raw: unknown[] = Array.isArray(s.builds_on) ? s.builds_on : [];
     const buildsOn = raw
-      .map(Number)
+      .map((n) => (typeof n === "number" || typeof n === "string" ? Number(n) : NaN))
       .filter((n) => Number.isInteger(n) && n >= 1 && n <= count && n !== i + 1);
     return {
-      kicker: "Step " + (i + 1) + " · " + (JSEALERS[sealer] ?? shown(sealer || "unassigned", 20)),
+      kicker: "Step " + (i + 1) + " · " + (ownEntry(JSEALERS, sealer) ?? shown(sealer || "unassigned", 20)),
       title: shown(typeof s.title === "string" && s.title ? s.title : "Untitled step", 60),
       aiLabel: policy.label,
       buildsOn,

@@ -199,14 +199,24 @@ let statusRegion: HTMLElement | null = null;
  * region, leaving button labels stable (SC 2.5.3 Label in Name).
  */
 export function announce(message: string): void {
-  if (!statusRegion || !statusRegion.isConnected) {
-    statusRegion = document.body.createDiv({
+  const region = prepareAnnouncer();
+  region.setText("");
+  window.setTimeout(() => region.setText(message), 30);
+}
+
+/** Create the live region ahead of the first message (call at plugin load):
+ * screen readers can miss a region created at the moment its text is set.
+ * Recreated when its window closed or focus moved to another window (a
+ * popout), so a message is read where the user is. */
+export function prepareAnnouncer(): HTMLElement {
+  if (!statusRegion || !statusRegion.isConnected || statusRegion.ownerDocument !== activeDocument) {
+    statusRegion?.remove();
+    statusRegion = activeDocument.body.createDiv({
       cls: "ks-sr-only",
       attr: { role: "status", "aria-live": "polite", "aria-atomic": "true" },
     });
   }
-  statusRegion.setText("");
-  window.setTimeout(() => statusRegion?.setText(message), 30);
+  return statusRegion;
 }
 
 export async function copyToClipboard(text: string): Promise<void> {

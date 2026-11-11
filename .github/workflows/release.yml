@@ -1,8 +1,8 @@
 name: Release plugins
 
-# Cut a release by pushing a version tag matching both manifests, e.g.:
+# Cut a release by pushing a version tag matching manifest.json, e.g.:
 #   git tag 0.1.0 && git push origin 0.1.0
-# The job builds both plugins and attaches the files Obsidian / BRAT need.
+# The job builds the plugin and attaches the files Obsidian / BRAT need.
 
 on:
   push:
@@ -35,22 +35,19 @@ jobs:
       - run: npm test
       - run: npm run build
 
-      - name: Verify tag matches both manifest versions
+      - name: Verify tag matches the manifest version
         run: |
-          for m in manifest.json instructor-plugin/manifest.json; do
-            V="$(node -p "require('./$m').version")"
-            if [ "$GITHUB_REF_NAME" != "$V" ]; then
-              echo "::error::tag '$GITHUB_REF_NAME' != version '$V' in $m"
-              exit 1
-            fi
-          done
+          V="$(node -p "require('./manifest.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$V" ]; then
+            echo "::error::tag '$GITHUB_REF_NAME' != version '$V' in manifest.json"
+            exit 1
+          fi
 
-      - name: Package both plugins
+      - name: Package the plugin
         run: |
-          mkdir -p dist/knobe-studio dist/knobe-teaching-studio
+          mkdir -p dist/knobe-studio
           cp manifest.json main.js styles.css dist/knobe-studio/
-          cp instructor-plugin/manifest.json instructor-plugin/main.js instructor-plugin/styles.css dist/knobe-teaching-studio/
-          (cd dist && zip -r knobe-studio.zip knobe-studio && zip -r knobe-teaching-studio.zip knobe-teaching-studio)
+          (cd dist && zip -r knobe-studio.zip knobe-studio)
 
       - name: Create GitHub release
         env:
@@ -59,6 +56,6 @@ jobs:
         run: |
           gh release create "$TAG" \
             main.js manifest.json styles.css \
-            dist/knobe-studio.zip dist/knobe-teaching-studio.zip \
+            dist/knobe-studio.zip \
             --title "$TAG" \
             --generate-notes

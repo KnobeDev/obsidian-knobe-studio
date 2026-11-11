@@ -49,7 +49,7 @@ async function readFileList(files: File[]): Promise<ZipReadResult> {
 }
 
 function pick(attrs: Record<string, string>, onResult: (r: ZipReadResult) => void, onError: (m: string) => void): void {
-  const input = document.createElement("input");
+  const input = createEl("input");
   input.type = "file";
   for (const [k, v] of Object.entries(attrs)) input.setAttribute(k, v);
   input.addEventListener("change", () => {

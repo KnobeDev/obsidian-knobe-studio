@@ -1,32 +1,59 @@
 /**
  * main.ts — the KNOBE Studio plugin entry: registers the Studio dashboard
- * view, commands, ribbon icon, file-menu items, and the settings tab, and
- * exposes `knobeApi` for the separate KNOBE Teaching Studio plugin.
+ * and the Teaching Studio dashboard views, commands, ribbon icons, file-menu
+ * items, and the settings tab.
  */
 import { Menu, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { KNOBE_STUDIO_VIEW, KnobeStudioView } from "./view";
+import { KNOBE_TEACHING_VIEW, KnobeTeachingView } from "./classroom";
 import { DEFAULT_SETTINGS, StudioSettingTab, type StudioSettings } from "./settings";
+import { retiredCompanionNotice, shouldNoticeRetiredCompanion } from "./teaching-fold";
+import { announce, prepareAnnouncer } from "./ui";
 import { KNOBE_NAME_RE, isUnderFolder } from "./vault";
 import type { TabId } from "./panel-context";
 import type { KnobeStudioApi } from "./api";
 
+/** How long the one-time upgrade notice stays up. */
+const NOTICE_MS = 20_000;
+
 export default class KnobeStudioPlugin extends Plugin {
   settings: StudioSettings = { ...DEFAULT_SETTINGS };
-  /** Public surface consumed by the KNOBE Teaching Studio plugin. */
+  /** What the Teaching Studio view calls into (see api.ts). */
   knobeApi!: KnobeStudioApi;
+  private teachingRibbon: HTMLElement | null = null;
+  /** Set at load: this vault is upgrading and hasn't had the one-time notice. */
+  private noticePending = false;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.knobeApi = this.buildApi();
 
     this.registerView(KNOBE_STUDIO_VIEW, (leaf: WorkspaceLeaf) => new KnobeStudioView(leaf, this));
+    this.registerView(KNOBE_TEACHING_VIEW, (leaf: WorkspaceLeaf) => new KnobeTeachingView(leaf, this.knobeApi));
     this.addRibbonIcon("stamp", "Open KNOBE Studio", () => void this.activateView());
+    if (this.settings.teachingStudio) this.addTeachingRibbon();
     this.addSettingTab(new StudioSettingTab(this.app, this));
+
+    // Upgrading vaults hear, once, that the Teaching Studio is built in now
+    // and any separate copy can go. The live region exists
+    // before the message, so screen readers pick it up.
+    prepareAnnouncer();
+    this.app.workspace.onLayoutReady(() => void this.noticeRetiredCompanion());
 
     this.addCommand({
       id: "open-studio",
       name: "Open Studio dashboard",
       callback: () => void this.activateView(),
+    });
+
+    this.addCommand({
+      id: "open-teaching-studio",
+      name: "Open Teaching Studio dashboard",
+      checkCallback: (checking) => {
+        if (!this.settings.teachingStudio) return false;
+        if (!checking) void this.activateTeachingView();
+        return true;
+      },
     });
 
     this.addCommand({
@@ -85,7 +112,11 @@ export default class KnobeStudioPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const saved = (await this.loadData()) as Record<string, unknown> | null;
+    this.noticePending = shouldNoticeRetiredCompanion(saved);
+    this.settings = { ...DEFAULT_SETTINGS, ...(saved as Partial<StudioSettings> | null) };
+    // A fresh install never had the separate plugin, so it never needs the notice.
+    if (saved === null) this.settings.retiredCompanionNoticed = true;
   }
 
   async saveSettings(): Promise<void> {
@@ -119,20 +150,68 @@ export default class KnobeStudioPlugin extends Plugin {
     this.refreshDemoState();
   }
 
-  /** Re-render the demo banner in every open Studio view. */
+  /** Re-render the demo banner in every open Studio and Teaching Studio view. */
   refreshDemoState(): void {
-    for (const leaf of this.app.workspace.getLeavesOfType(KNOBE_STUDIO_VIEW)) {
-      const view = leaf.view;
-      if (view instanceof KnobeStudioView) view.refreshDemoBanner();
-    }
+    for (const view of this.openViews()) view.refreshDemoBanner();
   }
 
-  /** Re-theme every open Studio view after the appearance setting changes. */
+  /** Re-theme every open Studio and Teaching Studio view after the appearance setting changes. */
   refreshStudioAppearance(): void {
-    for (const leaf of this.app.workspace.getLeavesOfType(KNOBE_STUDIO_VIEW)) {
-      const view = leaf.view;
-      if (view instanceof KnobeStudioView) view.applyAppearance();
+    for (const view of this.openViews()) view.applyAppearance();
+  }
+
+  private openViews(): Array<KnobeStudioView | KnobeTeachingView> {
+    const { workspace } = this.app;
+    return [...workspace.getLeavesOfType(KNOBE_STUDIO_VIEW), ...workspace.getLeavesOfType(KNOBE_TEACHING_VIEW)]
+      .map((leaf) => leaf.view)
+      .filter((view): view is KnobeStudioView | KnobeTeachingView =>
+        view instanceof KnobeStudioView || view instanceof KnobeTeachingView);
+  }
+
+  // ---- Teaching Studio ----------------------------------------------------
+
+  async activateTeachingView(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(KNOBE_TEACHING_VIEW)[0] ?? null;
+    if (!leaf) {
+      leaf = workspace.getLeaf("tab");
+      await leaf.setViewState({ type: KNOBE_TEACHING_VIEW, active: true });
     }
+    await workspace.revealLeaf(leaf);
+  }
+
+  /** Show or hide the Teaching Studio: its ribbon icon, its command, and any open tab. */
+  async setTeachingStudio(on: boolean): Promise<void> {
+    this.settings.teachingStudio = on;
+    await this.saveSettings();
+    for (const leaf of this.app.workspace.getLeavesOfType(KNOBE_STUDIO_VIEW)) {
+      if (leaf.view instanceof KnobeStudioView) leaf.view.refreshTeachingButton();
+    }
+    if (on) {
+      if (!this.teachingRibbon) this.addTeachingRibbon();
+      return;
+    }
+    this.teachingRibbon?.remove();
+    this.teachingRibbon = null;
+    for (const leaf of this.app.workspace.getLeavesOfType(KNOBE_TEACHING_VIEW)) leaf.detach();
+  }
+
+  private addTeachingRibbon(): void {
+    // Same name as the command, so voice control and screen readers find one name for one thing.
+    this.teachingRibbon = this.addRibbonIcon("graduation-cap", "Open Teaching Studio dashboard", () => void this.activateTeachingView());
+  }
+
+  private async noticeRetiredCompanion(): Promise<void> {
+    if (!this.noticePending) return;
+    this.noticePending = false;
+    const message = retiredCompanionNotice(this.settings.teachingStudio);
+    // A Notice can't take keyboard focus, so it times out rather than staying
+    // until clicked; the live region reads it to screen readers, and the same
+    // guidance stays in the Teaching Studio setting's description.
+    new Notice(message, NOTICE_MS);
+    announce(message);
+    this.settings.retiredCompanionNoticed = true;
+    await this.saveSettings();
   }
 
   async activateView(): Promise<KnobeStudioView> {
@@ -146,13 +225,13 @@ export default class KnobeStudioPlugin extends Plugin {
     return leaf.view as KnobeStudioView;
   }
 
-  /** Open the Studio dashboard focused on a given tab (used via knobeApi). */
+  /** Open the Studio dashboard focused on a given tab (used by the Teaching Studio). */
   async openStudioAt(tab: TabId): Promise<void> {
     const view = await this.activateView();
     view.selectTab(tab);
   }
 
-  /** The cross-plugin API surface consumed by the Teaching Studio plugin. */
+  /** The API surface the Teaching Studio view calls into. */
   private buildApi(): KnobeStudioApi {
     return {
       openStudioAt: (tab: TabId) => this.openStudioAt(tab),
