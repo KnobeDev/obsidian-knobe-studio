@@ -3,7 +3,7 @@
  * and the Teaching Studio dashboard views, commands, ribbon icons, file-menu
  * items, and the settings tab.
  */
-import { Menu, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Menu, Notice, Plugin, TFile, WorkspaceLeaf, requireApiVersion } from "obsidian";
 import { KNOBE_STUDIO_VIEW, KnobeStudioView } from "./view";
 import { KNOBE_TEACHING_VIEW, KnobeTeachingView } from "./classroom";
 import { DEFAULT_SETTINGS, StudioSettingTab, type StudioSettings } from "./settings";
@@ -177,7 +177,7 @@ export default class KnobeStudioPlugin extends Plugin {
       leaf = workspace.getLeaf("tab");
       await leaf.setViewState({ type: KNOBE_TEACHING_VIEW, active: true });
     }
-    await workspace.revealLeaf(leaf);
+    await this.focusDashboard(leaf);
   }
 
   /** Show or hide the Teaching Studio: its ribbon icon, its command, and any open tab. */
@@ -221,8 +221,17 @@ export default class KnobeStudioPlugin extends Plugin {
       leaf = workspace.getLeaf("tab");
       await leaf.setViewState({ type: KNOBE_STUDIO_VIEW, active: true });
     }
-    await workspace.revealLeaf(leaf);
+    await this.focusDashboard(leaf);
     return leaf.view as KnobeStudioView;
+  }
+
+  private async focusDashboard(leaf: WorkspaceLeaf): Promise<void> {
+    const { workspace } = this.app;
+    if (requireApiVersion("1.7.2")) {
+      await workspace.revealLeaf(leaf);
+    } else {
+      workspace.setActiveLeaf(leaf, { focus: true });
+    }
   }
 
   /** Open the Studio dashboard focused on a given tab (used by the Teaching Studio). */
