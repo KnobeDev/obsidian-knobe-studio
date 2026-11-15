@@ -3,11 +3,13 @@
  * derive a new object that declares its parent by hash, and seal it.
  */
 import { permits, read, transformKnobe, verify, type CreateResult, type VerifyReport } from "../engine/knobe-core";
-import { REPORT_TEXT_LIMIT, shown, storedHashText } from "../display";
-import { BEGIN_MARKER, localToday, singleLine, slugify } from "../studio-core";
+import { REPORT_TEXT_LIMIT, shown, sourceLicenseNote, storedHashText } from "../display";
 import {
-  button, conformanceTagCls, copyToClipboard, errorBox, helpText, hideError,
-  row2, selectField, showError, stateTagCls, tagChip, textAreaField, textField,
+  BEGIN_MARKER, LicenseRequiredError, buildTransformFields, isBlankLicense, localToday, singleLine, slugify,
+} from "../studio-core";
+import {
+  button, clearFieldError, conformanceTagCls, copyToClipboard, errorBox, helpText, hideError,
+  row2, selectField, setFieldError, showError, stateTagCls, tagChip, textAreaField, textField,
 } from "../ui";
 import { buildIntake } from "../intake";
 import type { StudioContext } from "../panel-context";
@@ -76,7 +78,11 @@ export class TransformPanel {
       attr: { role: "status" },
     });
     const r2 = row2(f);
-    this.license = textField(r2, "License", "");
+    this.license = textField(r2, "License", "", {
+      required: true,
+      hint: "Prefilled from the original when it names a license. It cannot be left blank.",
+      onInput: (v) => { if (!isBlankLicense(v)) clearFieldError(this.license); },
+    });
     this.privacy = selectField(r2, "Privacy level", PRIVACY, "public");
     this.author = textField(f, "Your name (transformer)", this.ctx.settings.defaultAuthor);
     this.sealErr = errorBox(f);
@@ -128,6 +134,7 @@ export class TransformPanel {
 
     this.body.value = (rd.body ?? "").replace(/^\n+/, "");
     this.license.value = typeof report.payload?.license === "string" ? report.payload.license : "";
+    clearFieldError(this.license);
     const priv = report.payload?.privacy_level;
     if (typeof priv === "string" && ["public", "internal", "sensitive", "restricted"].includes(priv)) {
       this.privacy.value = priv;
@@ -145,16 +152,15 @@ export class TransformPanel {
     if (!this.original) return;
     hideError(this.sealErr);
     try {
-      const fields: Record<string, unknown> = {};
-      const title = singleLine(this.title.value);
-      if (title) fields.title = title;
-      const summary = this.summary.value.trim();
-      if (summary) fields.summary = summary;
-      fields.content_type = this.type.value;
-      fields.created_date = localToday();
-      const lic = singleLine(this.license.value);
-      if (lic) fields.license = lic;
-      fields.privacy_level = this.privacy.value;
+      const fields = buildTransformFields({
+        title: this.title.value,
+        summary: this.summary.value,
+        type: this.type.value,
+        license: this.license.value,
+        privacy: this.privacy.value,
+        today: localToday(),
+        sourceLicenseNote: sourceLicenseNote(this.original.report.payload?.license, "original"),
+      });
       const author = singleLine(this.author.value) || null;
 
       this.result = await transformKnobe(this.original.text, { fields, body: this.body.value, author });
@@ -174,6 +180,13 @@ export class TransformPanel {
       this.resBox.removeClass("ks-hidden");
       this.resBox.focus();
     } catch (e) {
+      if (e instanceof LicenseRequiredError) {
+        // Nothing was sealed: an earlier result must not stay on offer to save.
+        this.result = null;
+        this.resBox.addClass("ks-hidden");
+        setFieldError(this.license, e.message);
+        return;
+      }
       showError(this.sealErr, "Sealing did not complete: " + (e instanceof Error ? e.message : String(e)));
     }
   }

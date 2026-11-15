@@ -90,17 +90,60 @@ export interface FieldOpts {
   placeholder?: string;
   rows?: number;
   onInput?: (value: string) => void;
+  /** Text fields only: "(required)" joins the visible label, and the input is
+   * marked aria-required. The label still starts with its own words, so
+   * "click License" works in voice control (SC 2.5.3). */
+  required?: boolean;
+  /** Text fields only: help shown under the field and read with it. */
+  hint?: string;
 }
 
 export function textField(parent: HTMLElement, label: string, value: string, opts: FieldOpts = {}): HTMLInputElement {
   const wrap = parent.createDiv({ cls: "ks-field" });
   const id = nextId("f");
-  wrap.createEl("label", { text: label, attr: { for: id } });
+  wrap.createEl("label", { text: opts.required ? label + " (required)" : label, attr: { for: id } });
   const input = wrap.createEl("input", { type: "text", attr: { id, autocomplete: "off" } });
   input.value = value;
   if (opts.placeholder) input.placeholder = opts.placeholder;
+  // aria-required, not the required attribute: these inputs sit outside any
+  // <form>, where `required` blocks nothing but matches :invalid from the start.
+  if (opts.required) input.setAttribute("aria-required", "true");
+  if (opts.hint) {
+    const hint = wrap.createDiv({ cls: "ks-fieldhint", text: opts.hint, attr: { id: id + "-hint" } });
+    input.setAttribute("aria-describedby", hint.id);
+  }
   if (opts.onInput) input.addEventListener("input", () => opts.onInput!(input.value));
   return input;
+}
+
+const describedBy = (input: HTMLElement): string[] =>
+  (input.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean);
+
+/**
+ * Show `message` under a field, mark the field invalid, and move focus to it.
+ * The message is plain text tied to the input by aria-describedby, so the
+ * focus move reads the label, the invalid state and the message once. It is
+ * deliberately not a live region: that would speak over the focus move.
+ */
+export function setFieldError(input: HTMLInputElement, message: string): void {
+  const wrap = input.parentElement;
+  if (!wrap) return;
+  const errId = input.id + "-err";
+  const el = wrap.querySelector<HTMLElement>(".ks-fielderr") ?? wrap.createDiv({ cls: "ks-fielderr", attr: { id: errId } });
+  el.setText(message);
+  input.setAttribute("aria-invalid", "true");
+  input.setAttribute("aria-describedby", [errId, ...describedBy(input).filter((i) => i !== errId)].join(" "));
+  input.focus();
+}
+
+/** Remove a field's error message and invalid state; its hint stays. */
+export function clearFieldError(input: HTMLInputElement): void {
+  const errId = input.id + "-err";
+  input.parentElement?.querySelector(".ks-fielderr")?.remove();
+  input.removeAttribute("aria-invalid");
+  const rest = describedBy(input).filter((i) => i !== errId);
+  if (rest.length) input.setAttribute("aria-describedby", rest.join(" "));
+  else input.removeAttribute("aria-describedby");
 }
 
 export function textAreaField(parent: HTMLElement, label: string, value: string, opts: FieldOpts = {}): HTMLTextAreaElement {

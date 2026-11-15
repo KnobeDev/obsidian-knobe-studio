@@ -93,7 +93,7 @@ export class StudioSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Default license")
-      .setDesc("Prefills the license field when a template does not set one (e.g. CC BY 4.0).")
+      .setDesc("Prefills the License field in Create when a template does not set one. Leave it blank to enter a license each time. Studio never chooses one on its own.")
       .addText((t) =>
         t.then((c) => c.inputEl.setAttr("aria-label", "Default license")).setValue(this.plugin.settings.defaultLicense).onChange(async (v) => {
           this.plugin.settings.defaultLicense = v;

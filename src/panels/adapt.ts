@@ -4,14 +4,16 @@
  * sealed with lineage back to its source by payload hash.
  */
 import { createKnobe, verify, type CreateResult, type VerifyReport } from "../engine/knobe-core";
-import { ATYPES, BEGIN_MARKER, buildAdaptFields, cleanupAdaptText, localToday, slugify } from "../studio-core";
 import {
-  button, conformanceTagCls, copyToClipboard, errorBox, helpText, hideError,
-  row2, selectField, showError, stateTagCls, tagChip, textAreaField, textField,
+  ATYPES, BEGIN_MARKER, LicenseRequiredError, buildAdaptFields, cleanupAdaptText, isBlankLicense, localToday, slugify,
+} from "../studio-core";
+import {
+  button, clearFieldError, conformanceTagCls, copyToClipboard, errorBox, helpText, hideError,
+  row2, selectField, setFieldError, showError, stateTagCls, tagChip, textAreaField, textField,
 } from "../ui";
 import { buildIntake } from "../intake";
 import { read } from "../engine/knobe-core";
-import { shown, storedHashText } from "../display";
+import { shown, sourceLicenseNote, storedHashText } from "../display";
 import type { StudioContext } from "../panel-context";
 
 export class AdaptPanel {
@@ -100,7 +102,11 @@ export class AdaptPanel {
     this.reviewer = textField(r2, "Reviewer (optional)", "");
     const r3 = row2(f);
     this.aiName = textField(r3, "AI tool used (leave blank if none)", "");
-    this.license = textField(r3, "License", "");
+    this.license = textField(r3, "License", "", {
+      required: true,
+      hint: "Prefilled from the source when it names a license. It cannot be left blank.",
+      onInput: (v) => { if (!isBlankLicense(v)) clearFieldError(this.license); },
+    });
     this.aiWhat = textAreaField(f, "What the AI did, and what you did yourself", "", { rows: 2 });
 
     this.sealErr = errorBox(f);
@@ -146,6 +152,7 @@ export class AdaptPanel {
     tagChip(this.origTags, "conformance: " + report.conformance, conformanceTagCls(report.conformance));
     this.body.value = (rd.body ?? "").replace(/^\n+/, "");
     this.license.value = typeof report.payload?.license === "string" ? report.payload.license : "";
+    clearFieldError(this.license);
     this.titleTouched = false;
     this.suggestTitle();
     this.preserved.value = "";
@@ -180,6 +187,7 @@ export class AdaptPanel {
         preserved: this.preserved.value,
         omitted: this.omitted.value,
         today: localToday(),
+        sourceLicenseNote: sourceLicenseNote(this.source.report.payload?.license, "source"),
       });
       this.result = await createKnobe({ fields, body: this.body.value });
       const pa = (this.result.payload.parents ?? [])[0] ?? {};
@@ -198,6 +206,13 @@ export class AdaptPanel {
       this.resBox.removeClass("ks-hidden");
       this.resBox.focus();
     } catch (e) {
+      if (e instanceof LicenseRequiredError) {
+        // Nothing was sealed: an earlier result must not stay on offer to save.
+        this.result = null;
+        this.resBox.addClass("ks-hidden");
+        setFieldError(this.license, e.message);
+        return;
+      }
       showError(this.sealErr, "Sealing did not complete: " + (e instanceof Error ? e.message : String(e)));
     }
   }

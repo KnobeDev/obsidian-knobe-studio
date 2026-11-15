@@ -255,6 +255,24 @@
   border-color: var(--ks-accent);
 }
 
+/* Required-field messaging: a hint under the field, and an error under it
+   once Seal has refused a blank value. Text plus a border, never colour alone. */
+.knobe-studio .ks-fieldhint {
+  font-size: var(--font-ui-smaller);
+  color: var(--ks-muted);
+}
+
+.knobe-studio .ks-fielderr {
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--ks-bad);
+}
+
+.knobe-studio .ks-field input[type="text"][aria-invalid="true"] {
+  border-color: var(--ks-bad);
+  box-shadow: inset 0 0 0 1px var(--ks-bad);
+}
+
 .knobe-studio .ks-field input[type="text"]::placeholder,
 .knobe-studio .ks-field textarea::placeholder {
   color: var(--ks-faint);
@@ -270,6 +288,12 @@
   gap: var(--size-4-2);
   flex-wrap: wrap;
   align-items: flex-end;
+}
+
+/* A field with a hint or error under it is taller than its neighbour: line
+   the pair up by their labels and inputs instead of their bottom edges. */
+.knobe-studio .ks-row2:has(.ks-fieldhint, .ks-fielderr) {
+  align-items: flex-start;
 }
 
 .knobe-studio .ks-checkline {

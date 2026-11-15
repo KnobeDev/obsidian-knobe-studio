@@ -62,6 +62,16 @@ export function shown(value: unknown, limit = 300): string {
   return cut(safe(head(text, limit), null), limit);
 }
 
+/** A sentence naming a source's sealed license, for the message shown when a
+ * derivative's license is left blank. The license is untrusted payload text,
+ * so it goes through shown() and is kept short, and a quotation mark inside
+ * it is escaped so it cannot pass for the end of the quoted name. */
+export function sourceLicenseNote(license: unknown, noun: "original" | "source"): string {
+  return typeof license === "string" && license.trim()
+    ? "The " + noun + ' is licensed "' + shown(license, 120).replace(/"/g, '\\"') + '".'
+    : "The " + noun + " declares no license.";
+}
+
 /** A stored payload_hash for display, or null when there is none. The engine
  * passes the payload's value through, so it may be any JSON value; a
  * non-string is shown for what it is ("12345 (expected a hash, got a number)"). */
