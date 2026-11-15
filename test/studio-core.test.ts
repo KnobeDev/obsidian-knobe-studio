@@ -115,7 +115,7 @@ describe("Create form → createKnobe args", () => {
   });
 
   test("blank author becomes Anonymous; empty groups are omitted", () => {
-    const state = emptyCreateState("2026-07-06");
+    const state = { ...emptyCreateState("2026-07-06"), license: "All rights reserved" };
     const f = buildCreateArgs(state, null).fields as Record<string, any>;
     expect(f.attribution.sources[0].author).toBe("Anonymous");
     expect(f.fidelity_limits).toBeUndefined();
@@ -124,7 +124,7 @@ describe("Create form → createKnobe args", () => {
   });
 
   test("journey context adds assignment_context, review status, and parents", () => {
-    const state = { ...emptyCreateState("2026-07-06"), title: "Step work" };
+    const state = { ...emptyCreateState("2026-07-06"), title: "Step work", license: "All rights reserved" };
     const ctx = {
       forStudent: true,
       aiUI: "disclose" as const,
@@ -147,6 +147,7 @@ describe("Create form → createKnobe args", () => {
       ...emptyCreateState("2026-07-06"),
       title: "Sealed from state",
       summary: "s",
+      license: "All rights reserved",
       body: "Body.",
     };
     const r = await createKnobe(buildCreateArgs(state, null));
@@ -344,7 +345,7 @@ describe("Adapt", () => {
     const base = {
       type: "translation" as const,
       sourceTitle: "T", sourceReport: report, sourceAuthor: "",
-      adapter: "", aiName: "", aiWhat: "", reviewer: "", title: "", license: "",
+      adapter: "", aiName: "", aiWhat: "", reviewer: "", title: "", license: "All rights reserved",
       preserved: "", omitted: "", today: "2026-07-06",
     };
     expect(() => buildAdaptFields(base)).toThrow(/adaptation/i);

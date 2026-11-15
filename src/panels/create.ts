@@ -9,6 +9,8 @@ import {
   applyTemplate,
   buildCreateArgs,
   emptyCreateState,
+  isBlankLicense,
+  LicenseRequiredError,
   localToday,
   slugify,
   type CreateFormState,
@@ -16,8 +18,8 @@ import {
   type JourneyContext,
 } from "../studio-core";
 import {
-  announce, button, checkField, copyToClipboard, debounce, errorBox, helpText, hideError,
-  row2, sectionHeading, selectField, showError, textAreaField, textField,
+  announce, button, checkField, clearFieldError, copyToClipboard, debounce, errorBox, helpText, hideError,
+  row2, sectionHeading, selectField, setFieldError, showError, textAreaField, textField,
 } from "../ui";
 import { REPORT_TEXT_LIMIT, shown } from "../display";
 import { buildMarkdownToolbar } from "../md-toolbar";
@@ -57,6 +59,7 @@ export class CreatePanel {
   private aiWhat!: HTMLTextAreaElement;
   private aiPolicyNote!: HTMLElement;
   private form!: HTMLElement;
+  private licenseInput!: HTMLInputElement;
   private extraSourcesEl!: HTMLElement;
   private addSourceBtn!: HTMLButtonElement;
   private preview!: HTMLElement;
@@ -196,7 +199,16 @@ export class CreatePanel {
 
     const r2 = row2(f);
     textField(r2, "Created date (YYYY-MM-DD)", s.createdDate, { onInput: (v) => { s.createdDate = v; onEdit(); } });
-    textField(r2, "License", s.license, { placeholder: "CC BY 4.0", onInput: (v) => { s.license = v; onEdit(); } });
+    // Rebuilt with the form, so the reference is renewed here every time.
+    this.licenseInput = textField(r2, "License", s.license, {
+      required: true,
+      hint: "Name the license for this work, such as CC BY 4.0 or All rights reserved. Studio never chooses one for you.",
+      onInput: (v) => {
+        s.license = v;
+        if (!isBlankLicense(v)) clearFieldError(this.licenseInput);
+        onEdit();
+      },
+    });
     const r3 = row2(f);
     selectField(r3, "Privacy level", PRIVACY_LEVELS, s.privacyLevel, (v) => { s.privacyLevel = v; onEdit(); });
     selectField(r3, "Quarantine status", QUARANTINE, s.quarantineStatus, (v) => { s.quarantineStatus = v; onEdit(); });
@@ -273,12 +285,24 @@ export class CreatePanel {
       const r = await createKnobe(buildCreateArgs(this.state, this.currentJourneyCtx()));
       if (token !== this.previewToken) return;
       this.preview.setText(r.text);
-      this.previewNote.setText("Self-check: " + r.report.state + " · " + r.report.conformance + ". The preview is the exact file the Seal button produces.");
+      this.setPreviewNote("Self-check: " + r.report.state + " · " + r.report.conformance + ". The preview is the exact file the Seal button produces.");
     } catch (e) {
       if (token !== this.previewToken) return;
       this.preview.setText("");
-      this.previewNote.setText("The file cannot be assembled yet: " + (e instanceof Error ? e.message : String(e)));
+      // A blank license is the normal starting state, not a fault: prompt for
+      // it here, and leave marking the field invalid to the Seal button.
+      this.setPreviewNote(
+        e instanceof LicenseRequiredError
+          ? "Enter a license to see the sealed file."
+          : "The file cannot be assembled yet: " + (e instanceof Error ? e.message : String(e))
+      );
     }
+  }
+
+  /** The note is a polite live region and the preview reruns on every edit:
+   * write it only when the wording changes, so it is not read out again. */
+  private setPreviewNote(text: string): void {
+    if (this.previewNote.textContent !== text) this.previewNote.setText(text);
   }
 
   private async seal(): Promise<void> {
@@ -311,6 +335,15 @@ export class CreatePanel {
         cb(this.result);
       }
     } catch (e) {
+      // The form can be rebuilt while a seal is in flight; a field that is no
+      // longer on the page cannot show the message, so the error box does.
+      if (e instanceof LicenseRequiredError && this.licenseInput.isConnected) {
+        // Nothing was sealed: an earlier result must not stay on offer to save.
+        this.result = null;
+        this.resBox.addClass("ks-hidden");
+        setFieldError(this.licenseInput, e.message);
+        return;
+      }
       showError(this.err, "Sealing did not complete: " + (e instanceof Error ? e.message : String(e)));
     }
   }

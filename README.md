@@ -12,12 +12,12 @@ Open it from the ribbon (stamp icon) or the command palette: **KNOBE Studio: Ope
 
 | Tab | What it does |
 |-----|--------------|
-| **Create** | Seal new content into a `.knobe.md` knowledge object. Start blank, from a template (instructor reading, student reflection, research transcript, enterprise summary), or from the active note. A Markdown toolbar (headings, bold/italic, lists, links, quotes, code) formats the body without memorizing syntax. Live preview shows the exact file the Seal button produces. |
+| **Create** | Seal new content into a `.knobe.md` knowledge object. Start blank, from a template (instructor reading, student reflection, research transcript, enterprise summary), or from the active note. A Markdown toolbar (headings, bold/italic, lists, links, quotes, code) formats the body without memorizing syntax. Live preview shows the exact file the Seal button produces. **License is required**: Studio never chooses one for you, and Seal refuses a blank one. |
 | **Verify** | Check whether a sealed record is intact: integrity state, body verification, and spec conformance, with the full report rendered in-panel. |
-| **Transform** | Derive a new object from a verified original. The derivative declares its parent by payload hash, and the sealed `use_conditions` are evaluated (`permits("transform")`) before you start. |
+| **Transform** | Derive a new object from a verified original. The derivative declares its parent by payload hash, and the sealed `use_conditions` are evaluated (`permits("transform")`) before you start. The License field is prefilled from the original when it names a license, and cannot be left blank. |
 | **Journey** | Instructors design assignment sequences: each step records who seals it, the kind of work, its AI policy, and what it builds on. Steps sealed through Create flow their hashes back into the journey. A **journey map** draws the sequence (who seals each step, its AI policy, what it builds on, which steps are hash-anchored) and marks "You are here" while you work a step. Students load a journey to start a step with context, fidelity limits, and use conditions pre-filled, including an internal privacy level and a consent note. |
 | **Cohort check** | Batch-verify a vault folder of submissions. Anomalies sort to the top: broken seals and files with no chain link to the loaded journey/assignment. View the lineage between submissions and export CSV. **Seal a cohort receipt**: one sealed file attesting which files (by payload hash) produced which verdicts at seal time; student names are left out, and anchoring its single hash anywhere with an independent timestamp timestamps every listed submission. |
-| **Adapt** | Create accessibility adaptations — plain language, translation, transcript/captions, alt-text, multimodal — sealed with lineage (`adaptation_of` + `accessibility` record) bound to the source by hash. |
+| **Adapt** | Create accessibility adaptations — plain language, translation, transcript/captions, alt-text, multimodal — sealed with lineage (`adaptation_of` + `accessibility` record) bound to the source by hash. The License field is prefilled from the source when it names a license, and cannot be left blank. |
 
 ## Course folder hierarchy
 
@@ -156,7 +156,7 @@ By default the Studio follows Obsidian's theme; the **Appearance** setting can p
 - **Appearance** — follow Obsidian, or force archival paper / night grove
 - **Output folder** — where sealed files land (default `KNOBE`)
 - **Default author** — prefills Create and Adapt
-- **Default license** — prefills when a template doesn't set one
+- **Default license** — prefills the License field in Create when a template doesn't set one; blank unless you set it
 - **Open sealed files** — open each sealed file after saving
 - **Demo folder** and **Demo / presentation mode** — see [Demo / presentation mode](#demo--presentation-mode)
 - **Teaching Studio dashboard** — turn the built-in guide on or off (off until you turn it on)

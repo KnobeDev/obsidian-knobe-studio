@@ -32,6 +32,36 @@ export function ownEntry<T>(table: Record<string, T>, key: string): T | undefine
 export const singleLine = (v: unknown): string =>
   plainText(v).replace(/[\r\n]+/g, " ").trim();
 
+/** Thrown when a form's license is blank. Panels show it on the License field. */
+export class LicenseRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LicenseRequiredError";
+  }
+}
+
+const LICENSE_REQUIRED = "Enter a license. Studio does not choose one for you.";
+
+const SHOWS_NOTHING = /^[\s\p{Cc}\p{Default_Ignorable_Code_Point}]*$/u;
+
+/** Whether a license shows nothing to a reader: it is empty, or holds only
+ * whitespace, control characters and characters that draw nothing, such as a
+ * zero-width space. */
+export const isBlankLicense = (value: unknown): boolean => SHOWS_NOTHING.test(plainText(value));
+
+/**
+ * The license a form will seal: the value on one line, trimmed. A blank value
+ * is refused, because the engine would otherwise seal "CC BY 4.0", a license
+ * nobody chose. `sourceNote` is a display-safe sentence about the source's
+ * license (sourceLicenseNote in display.ts), appended for derivatives.
+ */
+export function requireLicense(value: unknown, sourceNote?: string): string {
+  if (isBlankLicense(value)) {
+    throw new LicenseRequiredError(sourceNote ? LICENSE_REQUIRED + " " + sourceNote : LICENSE_REQUIRED);
+  }
+  return singleLine(value);
+}
+
 export const linesToArray = (v: unknown): string[] =>
   plainText(v).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
@@ -145,8 +175,7 @@ export function buildCreateArgs(
   if (summary) fields.summary = summary;
   fields.content_type = state.contentType;
   fields.created_date = state.createdDate || localToday();
-  const lic = singleLine(state.license);
-  if (lic) fields.license = lic;
+  fields.license = requireLicense(state.license);
   fields.privacy_level = state.privacyLevel;
   fields.quarantine_status = state.quarantineStatus;
 
@@ -228,6 +257,33 @@ export function buildCreateArgs(
   }
 
   return { fields, body: state.body, author: null };
+}
+
+// ---- transform -------------------------------------------------------------
+
+export interface TransformParams {
+  title: string;
+  summary: string;
+  type: string;
+  license: string;
+  privacy: string;
+  today: string;
+  /** Display-safe sentence about the original's license, for the blank-license message. */
+  sourceLicenseNote?: string;
+}
+
+/** Transform form → the fields transformKnobe merges over the original. */
+export function buildTransformFields(params: TransformParams): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+  const title = singleLine(params.title);
+  if (title) fields.title = title;
+  const summary = params.summary.trim();
+  if (summary) fields.summary = summary;
+  fields.content_type = params.type;
+  fields.created_date = params.today;
+  fields.license = requireLicense(params.license, params.sourceLicenseNote);
+  fields.privacy_level = params.privacy;
+  return fields;
 }
 
 // ---- templates -------------------------------------------------------------
@@ -773,6 +829,8 @@ export interface AdaptParams {
   preserved: string;
   omitted: string;
   today: string;
+  /** Display-safe sentence about the source's license, for the blank-license message. */
+  sourceLicenseNote?: string;
 }
 
 /** Fields for sealing an accessibility adaptation bound to its source hash. */
@@ -789,6 +847,7 @@ export function buildAdaptFields(params: AdaptParams): Record<string, unknown> {
   const omitted = params.omitted.trim().replace(/\s+/g, " ");
   const stored = params.sourceReport.stored;
   if (!stored) throw new Error("The source has no sealed hash to bind to.");
+  const license = requireLicense(params.license, params.sourceLicenseNote);
   const today = params.today;
 
   const sources: Array<Record<string, unknown>> = [];
@@ -866,7 +925,6 @@ export function buildAdaptFields(params: AdaptParams): Record<string, unknown> {
       notes: t.label + " produced in KNOBE Studio. Source bound by payload_hash.",
     }],
   };
-  const lic = singleLine(params.license);
-  if (lic) fields.license = lic;
+  fields.license = license;
   return fields;
 }
