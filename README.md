@@ -83,9 +83,9 @@ Demo mode narrows what the dashboards can *see*; it never deletes or moves anyth
 
 ## Engine
 
-Verification and sealing run on `knobe-core.js`, the official KNOBE Protocol v1 JavaScript engine from [knobe.org](https://knobe.org), vendored verbatim (Apache-2.0) from [knobe-protocol](https://github.com/KnobeOne/knobe-protocol) at `8d664d3`. That copy includes the sealer's refusal of code points its Unicode tables leave unassigned ([knobe-protocol#34](https://github.com/KnobeOne/knobe-protocol/pull/34)). The plugin adds no verification logic of its own.
+Verification and sealing run on `knobe-core.js`, the official KNOBE Protocol v1 JavaScript engine from [knobe.org](https://knobe.org), vendored verbatim (Apache-2.0) from [knobe-protocol](https://github.com/KnobeOne/knobe-protocol) at `4f66885`. That copy includes the sealer's refusal of code points its Unicode tables leave unassigned ([knobe-protocol#34](https://github.com/KnobeOne/knobe-protocol/pull/34)), and an unpaired-surrogate check with no regex lookbehind, which Safari and Obsidian on iOS before 16.4 cannot parse ([knobe-protocol#41](https://github.com/KnobeOne/knobe-protocol/pull/41)). The plugin adds no verification logic of its own.
 
-The test suite runs the engine over all 33 vectors in knobe-protocol's `test-vectors/` at `8d664d3` (9 core, 17 adversarial, 7 interpretation) and checks `status`, `body_verified` and `conformance` against the published README tables, plus round-trip create → verify → transform → adapt chains. CI compares the vendored engine and every bundled vector with knobe-protocol's current `main`, and fails if any byte differs. A verified result confirms integrity, not truth.
+The test suite runs the engine over all 33 vectors in knobe-protocol's `test-vectors/` at `4f66885` (9 core, 17 adversarial, 7 interpretation) and checks `status`, `body_verified` and `conformance` against the published README tables, plus round-trip create → verify → transform → adapt chains. CI compares the vendored engine and every bundled vector with knobe-protocol's current `main`, and fails if any byte differs. A verified result confirms integrity, not truth.
 
 ## Installing
 
